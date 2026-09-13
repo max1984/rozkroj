@@ -2,6 +2,7 @@ import type { } from 'react';
 import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
 import { useStore } from '../../store';
 import type { SheetLayout } from '../../types';
+import { mapEdgeBandingForRotation } from '../../utils/edgeBanding';
 
 interface Props {
   sheet: SheetLayout;
@@ -88,6 +89,7 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
                     ellipsis
                   />
                 )}
+                <EdgeBandingOverlay banding={mapEdgeBandingForRotation(def.edgeBanding, pp.rotated)} x={x} y={y} w={w} h={h} />
               </Group>
             );
           })}
@@ -97,6 +99,19 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
         </Layer>
       </Stage>
     </div>
+  );
+}
+
+const BANDING_COLOR = '#d97706';
+
+function EdgeBandingOverlay({ banding, x, y, w, h }: { banding: { top: boolean; right: boolean; bottom: boolean; left: boolean }; x: number; y: number; w: number; h: number }) {
+  return (
+    <>
+      {banding.top && <Line points={[x, y, x + w, y]} stroke={BANDING_COLOR} strokeWidth={3} />}
+      {banding.bottom && <Line points={[x, y + h, x + w, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
+      {banding.left && <Line points={[x, y, x, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
+      {banding.right && <Line points={[x + w, y, x + w, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
+    </>
   );
 }
 

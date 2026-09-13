@@ -4,6 +4,7 @@ import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import type { PieceDefinition } from '../../types';
 import { PieceForm } from './PieceForm';
+import { edgeCount } from '../../utils/edgeBanding';
 
 interface Props {
   piece: PieceDefinition;
@@ -47,6 +48,7 @@ export function PieceRow({ piece }: Props) {
           {format(piece.width)} × {format(piece.height)} × {piece.quantity}
           {material && materials.length > 1 && <span className="ml-1">· {material.name}</span>}
           {piece.grain !== 'none' && <span className="ml-1 text-amber-600 dark:text-amber-400">⟶ grain</span>}
+          {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 text-teal-600 dark:text-teal-400">▭ edge</span>}
           {piece.priority && <span className="ml-1 text-purple-600 dark:text-purple-400">★</span>}
         </div>
       </div>

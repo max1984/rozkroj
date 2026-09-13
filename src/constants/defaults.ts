@@ -3,3 +3,4 @@ export const DEFAULT_FRESH_EDGE_TRIM = 10; // mm per side
 export const MIN_OFFCUT_AREA = 10000;     // mm² (~100×100mm) to be considered reusable
 export const OFFCUT_STOCK_KEY = 'rozkroj_offcuts';
 export const DEFAULT_MATERIAL_NAME = 'Chipboard 18mm';
+export const DEFAULT_EDGE_BANDING = { top: false, right: false, bottom: false, left: false };

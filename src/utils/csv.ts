@@ -4,6 +4,20 @@ import { toMm } from './units';
 import { getPieceColor } from './colors';
 import { nanoid } from 'nanoid';
 
+function edgesToString(p: PieceDefinition): string {
+  const edges: string[] = [];
+  if (p.edgeBanding.top) edges.push('top');
+  if (p.edgeBanding.right) edges.push('right');
+  if (p.edgeBanding.bottom) edges.push('bottom');
+  if (p.edgeBanding.left) edges.push('left');
+  return edges.join('+');
+}
+
+function edgesFromString(value: string | undefined): PieceDefinition['edgeBanding'] {
+  const set = new Set((value ?? '').toLowerCase().split('+').map(s => s.trim()));
+  return { top: set.has('top'), right: set.has('right'), bottom: set.has('bottom'), left: set.has('left') };
+}
+
 export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[], unit: 'mm' | 'inch'): void {
   const materialMap = new Map(materials.map(m => [m.id, m.name]));
   const rows = pieces.map(p => ({
@@ -15,6 +29,7 @@ export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[],
     Grain: p.grain,
     RotationAllowed: p.rotationAllowed,
     Priority: p.priority,
+    EdgeBanding: edgesToString(p),
   }));
   const csv = Papa.unparse(rows);
   const blob = new Blob([csv], { type: 'text/csv' });
@@ -57,6 +72,7 @@ export function importCsv(
             grain: (row['Grain'] as PieceDefinition['grain']) || 'none',
             rotationAllowed: row['RotationAllowed']?.toLowerCase() !== 'false',
             priority: row['Priority']?.toLowerCase() === 'true',
+            edgeBanding: edgesFromString(row['EdgeBanding']),
             color: getPieceColor(existingCount + i),
           };
         });

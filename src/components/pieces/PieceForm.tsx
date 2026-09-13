@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
-import type { PieceDefinition, GrainDirection } from '../../types';
+import { EdgeBandingPicker } from './EdgeBandingPicker';
+import { DEFAULT_EDGE_BANDING } from '../../constants/defaults';
+import type { PieceDefinition, GrainDirection, EdgeBanding } from '../../types';
 
 interface Props {
   editing?: PieceDefinition;
@@ -22,6 +24,7 @@ export function PieceForm({ editing, onClose }: Props) {
   const [grain, setGrain] = useState<GrainDirection>(editing?.grain ?? 'none');
   const [rotationAllowed, setRotationAllowed] = useState(editing?.rotationAllowed ?? true);
   const [priority, setPriority] = useState(editing?.priority ?? false);
+  const [edgeBanding, setEdgeBanding] = useState<EdgeBanding>(editing?.edgeBanding ?? DEFAULT_EDGE_BANDING);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,9 +33,9 @@ export function PieceForm({ editing, onClose }: Props) {
     if (!w || !h || w <= 0 || h <= 0) return;
 
     if (editing) {
-      updatePiece(editing.id, { name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
+      updatePiece(editing.id, { name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority, edgeBanding });
     } else {
-      addPiece({ name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
+      addPiece({ name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority, edgeBanding });
     }
     onClose();
   };
@@ -126,6 +129,8 @@ export function PieceForm({ editing, onClose }: Props) {
           Priority piece
         </label>
       </div>
+
+      <EdgeBandingPicker value={edgeBanding} onChange={setEdgeBanding} />
 
       <div className="flex gap-2 pt-1">
         <button

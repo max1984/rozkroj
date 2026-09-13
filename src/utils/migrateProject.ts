@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_MATERIAL_NAME } from '../constants/defaults';
+import { DEFAULT_MATERIAL_NAME, DEFAULT_EDGE_BANDING } from '../constants/defaults';
 import { getPieceColor } from './colors';
 
 interface LegacyProject {
@@ -45,6 +45,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   });
 
   project.offcutStock = project.offcutStock ?? [];
+  project.pieces = project.pieces.map(p => ({ ...p, edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING }));
 
   return project;
 }

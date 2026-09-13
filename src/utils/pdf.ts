@@ -1,7 +1,18 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { LayoutResult, Project } from '../types';
+import type { LayoutResult, Project, PieceDefinition } from '../types';
 import { fromMm } from './units';
+import { totalBandingLengthMm, mapEdgeBandingForRotation } from './edgeBanding';
+
+function edgesLabel(p: PieceDefinition): string {
+  const letters = [
+    p.edgeBanding.top ? 'T' : '',
+    p.edgeBanding.right ? 'R' : '',
+    p.edgeBanding.bottom ? 'B' : '',
+    p.edgeBanding.left ? 'L' : '',
+  ].filter(Boolean);
+  return letters.join('');
+}
 
 
 export async function generatePdf(
@@ -26,19 +37,21 @@ export async function generatePdf(
   doc.text(project.name, margin, margin + 5);
   doc.setFontSize(9);
   const costLine = layout.totalCost > 0 ? ` | Material cost: ${formatCost(layout.totalCost)}` : '';
-  doc.text(`Kerf: ${formatVal(project.settings.sawKerf)} | Sheets needed: ${layout.sheets.length} | Total waste: ${layout.totalWastePercent}%${costLine}`, margin, margin + 12);
+  const bandingMm = totalBandingLengthMm(project.pieces);
+  const bandingLine = bandingMm > 0 ? ` | Edge banding: ${formatVal(Math.round(bandingMm))}` : '';
+  doc.text(`Kerf: ${formatVal(project.settings.sawKerf)} | Sheets needed: ${layout.sheets.length} | Total waste: ${layout.totalWastePercent}%${costLine}${bandingLine}`, margin, margin + 12);
 
   const showMaterialColumn = project.materials.length > 1;
   const tableRows = project.pieces.map(p => {
     const row = [p.name];
     if (showMaterialColumn) row.push(materialMap.get(p.materialId)?.name ?? '');
-    row.push(formatVal(p.width), formatVal(p.height), String(p.quantity), p.grain, p.rotationAllowed ? 'Yes' : 'No', p.priority ? '★' : '');
+    row.push(formatVal(p.width), formatVal(p.height), String(p.quantity), p.grain, p.rotationAllowed ? 'Yes' : 'No', p.priority ? '★' : '', edgesLabel(p));
     return row;
   });
 
   const head = ['Name'];
   if (showMaterialColumn) head.push('Material');
-  head.push(`Width (${unit})`, `Height (${unit})`, 'Qty', 'Grain', 'Rotation', 'Priority');
+  head.push(`Width (${unit})`, `Height (${unit})`, 'Qty', 'Grain', 'Rotation', 'Priority', 'Edges');
 
   autoTable(doc, {
     startY: margin + 18,
@@ -109,6 +122,16 @@ export async function generatePdf(
         doc.setTextColor(255, 255, 255);
         const label = def.name.length > 12 ? def.name.slice(0, 11) + '…' : def.name;
         doc.text(label, x + 1, y + h / 2 + 1);
+      }
+
+      const banding = mapEdgeBandingForRotation(def.edgeBanding, pp.rotated);
+      if (banding.top || banding.right || banding.bottom || banding.left) {
+        doc.setDrawColor(217, 119, 6);
+        doc.setLineWidth(0.6);
+        if (banding.top) doc.line(x, y, x + w, y);
+        if (banding.bottom) doc.line(x, y + h, x + w, y + h);
+        if (banding.left) doc.line(x, y, x, y + h);
+        if (banding.right) doc.line(x + w, y, x + w, y + h);
       }
     }
 
