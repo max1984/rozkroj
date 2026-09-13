@@ -3,6 +3,7 @@ export type GrainDirection = 'horizontal' | 'vertical' | 'none';
 export interface PieceDefinition {
   id: string;
   name: string;
+  materialId: string;
   width: number;   // mm, internal
   height: number;  // mm, internal
   quantity: number;

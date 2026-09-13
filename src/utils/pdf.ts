@@ -14,40 +14,61 @@ export async function generatePdf(
   const pageH = 210;
   const margin = 10;
 
-  const sheetW = project.settings.size.width;
-  const sheetH = project.settings.size.height;
+  const materialMap = new Map(project.materials.map(m => [m.id, m]));
   const unit = project.unit;
 
   const formatVal = (mm: number) =>
     unit === 'inch' ? `${(fromMm(mm, 'inch')).toFixed(2)}"` : `${mm}mm`;
+  const formatCost = (v: number) => v.toFixed(2);
 
   // --- Cut list table first page ---
   doc.setFontSize(16);
   doc.text(project.name, margin, margin + 5);
   doc.setFontSize(9);
-  doc.text(`Sheet: ${formatVal(sheetW)} × ${formatVal(sheetH)} | Kerf: ${formatVal(project.settings.sawKerf)} | Sheets needed: ${layout.sheets.length} | Total waste: ${layout.totalWastePercent}%`, margin, margin + 12);
+  const costLine = layout.totalCost > 0 ? ` | Material cost: ${formatCost(layout.totalCost)}` : '';
+  doc.text(`Kerf: ${formatVal(project.settings.sawKerf)} | Sheets needed: ${layout.sheets.length} | Total waste: ${layout.totalWastePercent}%${costLine}`, margin, margin + 12);
 
-  const tableRows = project.pieces.map(p => [
-    p.name,
-    formatVal(p.width),
-    formatVal(p.height),
-    p.quantity,
-    p.grain,
-    p.rotationAllowed ? 'Yes' : 'No',
-    p.priority ? '★' : '',
-  ]);
+  const showMaterialColumn = project.materials.length > 1;
+  const tableRows = project.pieces.map(p => {
+    const row = [p.name];
+    if (showMaterialColumn) row.push(materialMap.get(p.materialId)?.name ?? '');
+    row.push(formatVal(p.width), formatVal(p.height), String(p.quantity), p.grain, p.rotationAllowed ? 'Yes' : 'No', p.priority ? '★' : '');
+    return row;
+  });
+
+  const head = ['Name'];
+  if (showMaterialColumn) head.push('Material');
+  head.push(`Width (${unit})`, `Height (${unit})`, 'Qty', 'Grain', 'Rotation', 'Priority');
 
   autoTable(doc, {
     startY: margin + 18,
-    head: [['Name', `Width (${unit})`, `Height (${unit})`, 'Qty', 'Grain', 'Rotation', 'Priority']],
+    head: [head],
     body: tableRows,
     styles: { fontSize: 8 },
     headStyles: { fillColor: [37, 99, 235] },
   });
 
+  if (layout.materialUsage.length > 0 && showMaterialColumn) {
+    const usageRows = layout.materialUsage.map(u => {
+      const m = materialMap.get(u.materialId);
+      return [m?.name ?? u.materialId, String(u.sheetCount), m && m.pricePerSheet > 0 ? formatCost(u.cost) : '—'];
+    });
+    autoTable(doc, {
+      startY: (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6,
+      head: [['Material', 'Sheets', 'Cost']],
+      body: usageRows,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [37, 99, 235] },
+      tableWidth: 100,
+    });
+  }
+
   // --- Sheet layout pages ---
   const drawSheet = (sheetIdx: number, offsetX: number, offsetY: number, maxW: number, maxH: number) => {
     const sheet = layout.sheets[sheetIdx];
+    const material = materialMap.get(sheet.materialId);
+    const sheetW = material?.size.width ?? 0;
+    const sheetH = material?.size.height ?? 0;
     const scale = Math.min(maxW / sheetW, maxH / sheetH);
     const sw = sheetW * scale;
     const sh = sheetH * scale;
@@ -60,7 +81,8 @@ export async function generatePdf(
     // Sheet label
     doc.setFontSize(7);
     doc.setTextColor(100);
-    doc.text(`Sheet ${sheetIdx + 1} — ${sheet.wastePercent}% waste`, offsetX, offsetY - 1);
+    const materialLabel = showMaterialColumn && material ? ` (${material.name})` : '';
+    doc.text(`Sheet ${sheetIdx + 1} — ${sheet.wastePercent}% waste${materialLabel}`, offsetX, offsetY - 1);
 
     // Pieces
     for (const pp of sheet.placedPieces) {

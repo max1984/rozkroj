@@ -5,7 +5,7 @@ import { SheetCanvas } from './SheetCanvas';
 
 export function LayoutViewer() {
   const layout = useStore(s => s.layout);
-  const settings = useStore(s => s.settings);
+  const materials = useStore(s => s.materials);
   const pieces = useStore(s => s.pieces);
   const [sheetIdx, setSheetIdx] = useState(0);
 
@@ -19,6 +19,7 @@ export function LayoutViewer() {
 
   const idx = Math.min(sheetIdx, layout.sheets.length - 1);
   const sheet = layout.sheets[idx];
+  const material = materials.find(m => m.id === sheet.materialId);
 
   return (
     <div className="flex flex-col gap-3">
@@ -34,6 +35,7 @@ export function LayoutViewer() {
           </button>
           <span className="text-sm font-medium">
             Sheet {idx + 1} / {layout.sheets.length}
+            {material && materials.length > 1 && <span className="text-gray-400 font-normal"> — {material.name}</span>}
           </span>
           <button
             disabled={idx === layout.sheets.length - 1}
@@ -56,8 +58,8 @@ export function LayoutViewer() {
 
       <SheetCanvas
         sheet={sheet}
-        sheetWidth={settings.size.width}
-        sheetHeight={settings.size.height}
+        sheetWidth={material?.size.width ?? 0}
+        sheetHeight={material?.size.height ?? 0}
       />
 
       {layout.unplacedPieces.length > 0 && (

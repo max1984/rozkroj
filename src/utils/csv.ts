@@ -1,12 +1,14 @@
 import Papa from 'papaparse';
-import type { PieceDefinition } from '../types';
+import type { PieceDefinition, MaterialStock } from '../types';
 import { toMm } from './units';
 import { getPieceColor } from './colors';
 import { nanoid } from 'nanoid';
 
-export function exportCsv(pieces: PieceDefinition[], unit: 'mm' | 'inch'): void {
+export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[], unit: 'mm' | 'inch'): void {
+  const materialMap = new Map(materials.map(m => [m.id, m.name]));
   const rows = pieces.map(p => ({
     Name: p.name,
+    Material: materialMap.get(p.materialId) ?? '',
     [`Width (${unit})`]: unit === 'inch' ? (p.width / 25.4).toFixed(4) : p.width,
     [`Height (${unit})`]: unit === 'inch' ? (p.height / 25.4).toFixed(4) : p.height,
     Quantity: p.quantity,
@@ -28,9 +30,13 @@ export function importCsv(
   file: File,
   unit: 'mm' | 'inch',
   existingCount: number,
+  materials: MaterialStock[],
   onDone: (pieces: PieceDefinition[]) => void,
   onError: (msg: string) => void
 ): void {
+  const defaultMaterialId = materials[0]?.id ?? '';
+  const byName = new Map(materials.map(m => [m.name.toLowerCase(), m.id]));
+
   Papa.parse(file, {
     header: true,
     skipEmptyLines: true,
@@ -40,9 +46,11 @@ export function importCsv(
           const name = row['Name'] || `Piece ${existingCount + i + 1}`;
           const widthRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('width')) ?? '0');
           const heightRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('height')) ?? '0');
+          const materialId = byName.get((row['Material'] || '').toLowerCase()) ?? defaultMaterialId;
           return {
             id: nanoid(),
             name,
+            materialId,
             width: toMm(widthRaw, unit),
             height: toMm(heightRaw, unit),
             quantity: parseInt(row['Quantity'] || '1', 10),

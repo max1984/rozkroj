@@ -14,8 +14,10 @@ export function PieceRow({ piece }: Props) {
   const setHoveredPieceId = useStore(s => s.setHoveredPieceId);
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
   const selectedPieceId = useStore(s => s.selectedPieceId);
+  const materials = useStore(s => s.materials);
   const { format } = useUnitDisplay();
   const [editing, setEditing] = useState(false);
+  const material = materials.find(m => m.id === piece.materialId);
 
   const isSelected = selectedPieceId === piece.id;
 
@@ -43,6 +45,7 @@ export function PieceRow({ piece }: Props) {
         <div className="text-sm font-medium truncate">{piece.name}</div>
         <div className="text-xs text-gray-500 dark:text-gray-400">
           {format(piece.width)} × {format(piece.height)} × {piece.quantity}
+          {material && materials.length > 1 && <span className="ml-1">· {material.name}</span>}
           {piece.grain !== 'none' && <span className="ml-1 text-amber-600 dark:text-amber-400">⟶ grain</span>}
           {piece.priority && <span className="ml-1 text-purple-600 dark:text-purple-400">★</span>}
         </div>

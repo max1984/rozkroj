@@ -13,6 +13,7 @@ export function Toolbar() {
   const toggleDarkMode = useStore(s => s.toggleDarkMode);
   const pieces = useStore(s => s.pieces);
   const unit = useStore(s => s.unit);
+  const materials = useStore(s => s.materials);
   const layout = useStore(s => s.layout);
   const { save, loadFromFile, exportToFile } = useSaveLoad();
   const [pdfAllOnOne, setPdfAllOnOne] = useState(false);
@@ -83,7 +84,7 @@ export function Toolbar() {
 
       {/* CSV Export */}
       <button
-        onClick={() => exportCsv(pieces, unit)}
+        onClick={() => exportCsv(pieces, materials, unit)}
         disabled={pieces.length === 0}
         className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-30"
         title="Export cut list as CSV"

@@ -1,12 +1,14 @@
-import type { SheetSettings } from './sheet';
+import type { CuttingSettings } from './sheet';
 import type { PieceDefinition } from './piece';
+import type { MaterialStock } from './material';
 
 export interface Project {
   id: string;
   name: string;
   createdAt: number;
   updatedAt: number;
-  settings: SheetSettings;
+  settings: CuttingSettings;
+  materials: MaterialStock[];
   unit: 'mm' | 'inch';
   algorithm: 'maxrects' | 'easycut';
   pieces: PieceDefinition[];

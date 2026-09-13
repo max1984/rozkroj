@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
-import type { PieceDefinition, SheetSettings, LayoutResult, Project } from '../types';
-import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM } from '../constants/defaults';
+import type { PieceDefinition, CuttingSettings, MaterialStock, LayoutResult, Project } from '../types';
+import { DEFAULT_SHEET_SIZE } from '../constants/sheetSizes';
+import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, DEFAULT_MATERIAL_NAME } from '../constants/defaults';
 import { getPieceColor } from '../utils/colors';
 import { runOptimizer } from '../algorithms/optimizer';
+import { migrateProject } from '../utils/migrateProject';
 
 interface AppState {
   // Project meta
@@ -15,7 +16,10 @@ interface AppState {
   // Settings
   unit: 'mm' | 'inch';
   algorithm: 'maxrects' | 'easycut';
-  settings: SheetSettings;
+  settings: CuttingSettings;
+
+  // Materials (stock sheets available for this project)
+  materials: MaterialStock[];
 
   // Pieces
   pieces: PieceDefinition[];
@@ -35,7 +39,11 @@ interface AppState {
   setProjectName: (name: string) => void;
   setUnit: (unit: 'mm' | 'inch') => void;
   setAlgorithm: (alg: 'maxrects' | 'easycut') => void;
-  setSettings: (s: Partial<SheetSettings>) => void;
+  setSettings: (s: Partial<CuttingSettings>) => void;
+
+  addMaterial: (m: Omit<MaterialStock, 'id' | 'color'>) => void;
+  updateMaterial: (id: string, m: Partial<MaterialStock>) => void;
+  removeMaterial: (id: string) => void;
 
   addPiece: (p: Omit<PieceDefinition, 'id' | 'color'>) => void;
   updatePiece: (id: string, p: Partial<PieceDefinition>) => void;
@@ -55,12 +63,21 @@ interface AppState {
   removeOffcut: (index: number) => void;
 }
 
-const DEFAULT_SETTINGS: SheetSettings = {
-  size: DEFAULT_SHEET_SIZE,
+const DEFAULT_SETTINGS: CuttingSettings = {
   sawKerf: DEFAULT_SAW_KERF,
   freshEdge: true,
   freshEdgeTrim: DEFAULT_FRESH_EDGE_TRIM,
 };
+
+function defaultMaterial(): MaterialStock {
+  return {
+    id: nanoid(),
+    name: DEFAULT_MATERIAL_NAME,
+    color: getPieceColor(0),
+    size: DEFAULT_SHEET_SIZE,
+    pricePerSheet: 0,
+  };
+}
 
 export const useStore = create<AppState>()(
   temporal(
@@ -70,6 +87,7 @@ export const useStore = create<AppState>()(
       unit: 'mm',
       algorithm: 'maxrects',
       settings: DEFAULT_SETTINGS,
+      materials: [defaultMaterial()],
       pieces: [],
       layout: null,
       selectedPieceId: null,
@@ -85,6 +103,26 @@ export const useStore = create<AppState>()(
       },
       setSettings: (s) => {
         set(state => ({ settings: { ...state.settings, ...s } }));
+        get().recomputeLayout();
+      },
+
+      addMaterial: (m) => {
+        const material: MaterialStock = { ...m, id: nanoid(), color: getPieceColor(get().materials.length) };
+        set(state => ({ materials: [...state.materials, material] }));
+      },
+      updateMaterial: (id, m) => {
+        set(state => ({ materials: state.materials.map(x => x.id === id ? { ...x, ...m } : x) }));
+        get().recomputeLayout();
+      },
+      removeMaterial: (id) => {
+        const { materials, pieces } = get();
+        if (materials.length <= 1) return;
+        const fallback = materials.find(m => m.id !== id);
+        if (!fallback) return;
+        set({
+          materials: materials.filter(m => m.id !== id),
+          pieces: pieces.map(p => p.materialId === id ? { ...p, materialId: fallback.id } : p),
+        });
         get().recomputeLayout();
       },
 
@@ -108,8 +146,8 @@ export const useStore = create<AppState>()(
       },
 
       recomputeLayout: () => {
-        const { pieces, settings, algorithm } = get();
-        const layout = runOptimizer(pieces, settings, algorithm);
+        const { pieces, materials, settings, algorithm } = get();
+        const layout = runOptimizer(pieces, materials, settings, algorithm);
         set({ layout });
       },
 
@@ -128,6 +166,7 @@ export const useStore = create<AppState>()(
           unit: project.unit,
           algorithm: project.algorithm,
           settings: project.settings,
+          materials: project.materials,
           pieces: project.pieces,
         });
         get().recomputeLayout();
@@ -140,6 +179,7 @@ export const useStore = create<AppState>()(
           createdAt: Date.now(),
           updatedAt: Date.now(),
           settings: s.settings,
+          materials: s.materials,
           unit: s.unit,
           algorithm: s.algorithm,
           pieces: s.pieces,
@@ -156,9 +196,10 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      // Only track pieces, settings, algorithm in undo history
+      // Only track pieces, materials, settings, algorithm in undo history
       partialize: (state) => ({
         pieces: state.pieces,
+        materials: state.materials,
         settings: state.settings,
         algorithm: state.algorithm,
         projectName: state.projectName,
@@ -171,12 +212,7 @@ export const useStore = create<AppState>()(
 const saved = localStorage.getItem('rozkroj_project');
 if (saved) {
   try {
-    const project: Project = JSON.parse(saved);
-    // Restore standard sheet size object reference
-    const matchedSize = STANDARD_SHEET_SIZES.find(
-      s => s.width === project.settings.size.width && s.height === project.settings.size.height
-    ) || project.settings.size;
-    project.settings.size = matchedSize;
+    const project = migrateProject(JSON.parse(saved));
     useStore.getState().loadProject(project);
   } catch { /* ignore corrupt save */ }
 }

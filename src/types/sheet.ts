@@ -5,8 +5,7 @@ export interface SheetSize {
   custom?: boolean;
 }
 
-export interface SheetSettings {
-  size: SheetSize;
+export interface CuttingSettings {
   sawKerf: number;       // mm
   freshEdge: boolean;
   freshEdgeTrim: number; // mm trimmed from each side

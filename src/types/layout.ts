@@ -18,6 +18,7 @@ export interface FreeRect {
 
 export interface SheetLayout {
   sheetIndex: number;
+  materialId: string;
   placedPieces: PlacedPiece[];
   freeRects: FreeRect[];
   usableArea: number;
@@ -25,9 +26,17 @@ export interface SheetLayout {
   wastePercent: number;
 }
 
+export interface MaterialUsage {
+  materialId: string;
+  sheetCount: number;
+  cost: number;
+}
+
 export interface LayoutResult {
   sheets: SheetLayout[];
   unplacedPieces: { definitionId: string; instanceIndex: number }[];
   totalWastePercent: number;
+  materialUsage: MaterialUsage[];
+  totalCost: number;
   computedAt: number;
 }

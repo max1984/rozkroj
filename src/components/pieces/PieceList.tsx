@@ -9,6 +9,7 @@ export function PieceList() {
   const pieces = useStore(s => s.pieces);
   const setPieces = useStore(s => s.setPieces);
   const unit = useStore(s => s.unit);
+  const materials = useStore(s => s.materials);
   const [adding, setAdding] = useState(false);
 
   const handleCsvImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -18,6 +19,7 @@ export function PieceList() {
       file,
       unit,
       pieces.length,
+      materials,
       (imported) => setPieces([...pieces, ...imported]),
       (err) => alert(err)
     );

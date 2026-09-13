@@ -86,7 +86,7 @@ export function placePiece(
   h: number
 ): FreeRect[] {
   const placed: Rect = { x, y, width: w, height: h };
-  let newFreeRects: FreeRect[] = [];
+  const newFreeRects: FreeRect[] = [];
 
   for (const fr of freeRects) {
     const frRect: Rect = { x: fr.x, y: fr.y, width: fr.width, height: fr.height };

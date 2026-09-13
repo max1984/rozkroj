@@ -1,4 +1,4 @@
-import { SheetSizePicker } from '../settings/SheetSizePicker';
+import { MaterialManager } from '../settings/MaterialManager';
 import { KerfSettings } from '../settings/KerfSettings';
 import { UnitToggle } from '../settings/UnitToggle';
 import { AlgorithmPicker } from '../settings/AlgorithmPicker';
@@ -15,7 +15,7 @@ export function Sidebar() {
           <UnitToggle />
         </div>
 
-        <SheetSizePicker />
+        <MaterialManager />
         <KerfSettings />
         <AlgorithmPicker />
 

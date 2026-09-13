@@ -11,9 +11,11 @@ interface Props {
 export function PieceForm({ editing, onClose }: Props) {
   const addPiece = useStore(s => s.addPiece);
   const updatePiece = useStore(s => s.updatePiece);
+  const materials = useStore(s => s.materials);
   const { unit, toMm, inputValue } = useUnitDisplay();
 
   const [name, setName] = useState(editing?.name ?? '');
+  const [materialId, setMaterialId] = useState(editing?.materialId ?? materials[0]?.id ?? '');
   const [width, setWidth] = useState(editing ? inputValue(editing.width) : '');
   const [height, setHeight] = useState(editing ? inputValue(editing.height) : '');
   const [qty, setQty] = useState(String(editing?.quantity ?? 1));
@@ -28,9 +30,9 @@ export function PieceForm({ editing, onClose }: Props) {
     if (!w || !h || w <= 0 || h <= 0) return;
 
     if (editing) {
-      updatePiece(editing.id, { name: name || `${width}×${height}`, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
+      updatePiece(editing.id, { name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
     } else {
-      addPiece({ name: name || `${width}×${height}`, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
+      addPiece({ name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority });
     }
     onClose();
   };
@@ -47,6 +49,21 @@ export function PieceForm({ editing, onClose }: Props) {
           onChange={e => setName(e.target.value)}
         />
       </div>
+
+      {materials.length > 1 && (
+        <div>
+          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Material</label>
+          <select
+            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            value={materialId}
+            onChange={e => setMaterialId(e.target.value)}
+          >
+            {materials.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <div className="flex-1">

@@ -1,4 +1,5 @@
 import { useStore } from '../store';
+import { migrateProject } from '../utils/migrateProject';
 
 export function useSaveLoad() {
   const saveProject = useStore(s => s.saveProject);
@@ -12,7 +13,7 @@ export function useSaveLoad() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const project = JSON.parse(e.target?.result as string);
+        const project = migrateProject(JSON.parse(e.target?.result as string));
         loadProject(project);
       } catch {
         alert('Invalid project file.');
