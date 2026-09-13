@@ -7,3 +7,11 @@ export interface MaterialStock {
   size: SheetSize;
   pricePerSheet: number; // 0 = cost not tracked
 }
+
+export interface OffcutItem {
+  id: string;
+  materialId: string;
+  width: number;
+  height: number;
+  label: string;
+}

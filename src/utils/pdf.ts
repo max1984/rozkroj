@@ -67,8 +67,8 @@ export async function generatePdf(
   const drawSheet = (sheetIdx: number, offsetX: number, offsetY: number, maxW: number, maxH: number) => {
     const sheet = layout.sheets[sheetIdx];
     const material = materialMap.get(sheet.materialId);
-    const sheetW = material?.size.width ?? 0;
-    const sheetH = material?.size.height ?? 0;
+    const sheetW = sheet.width;
+    const sheetH = sheet.height;
     const scale = Math.min(maxW / sheetW, maxH / sheetH);
     const sw = sheetW * scale;
     const sh = sheetH * scale;
@@ -82,7 +82,8 @@ export async function generatePdf(
     doc.setFontSize(7);
     doc.setTextColor(100);
     const materialLabel = showMaterialColumn && material ? ` (${material.name})` : '';
-    doc.text(`Sheet ${sheetIdx + 1} — ${sheet.wastePercent}% waste${materialLabel}`, offsetX, offsetY - 1);
+    const offcutLabel = sheet.sourceOffcutId ? ' [offcut]' : '';
+    doc.text(`Sheet ${sheetIdx + 1} — ${sheet.wastePercent}% waste${materialLabel}${offcutLabel}`, offsetX, offsetY - 1);
 
     // Pieces
     for (const pp of sheet.placedPieces) {

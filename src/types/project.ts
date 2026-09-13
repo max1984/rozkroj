@@ -1,6 +1,6 @@
 import type { CuttingSettings } from './sheet';
 import type { PieceDefinition } from './piece';
-import type { MaterialStock } from './material';
+import type { MaterialStock, OffcutItem } from './material';
 
 export interface Project {
   id: string;
@@ -12,4 +12,5 @@ export interface Project {
   unit: 'mm' | 'inch';
   algorithm: 'maxrects' | 'easycut';
   pieces: PieceDefinition[];
+  offcutStock: OffcutItem[];
 }

@@ -19,6 +19,9 @@ export interface FreeRect {
 export interface SheetLayout {
   sheetIndex: number;
   materialId: string;
+  sourceOffcutId?: string;
+  width: number;
+  height: number;
   placedPieces: PlacedPiece[];
   freeRects: FreeRect[];
   usableArea: number;

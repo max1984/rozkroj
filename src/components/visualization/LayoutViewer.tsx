@@ -36,6 +36,9 @@ export function LayoutViewer() {
           <span className="text-sm font-medium">
             Sheet {idx + 1} / {layout.sheets.length}
             {material && materials.length > 1 && <span className="text-gray-400 font-normal"> — {material.name}</span>}
+            {sheet.sourceOffcutId && (
+              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 align-middle">offcut</span>
+            )}
           </span>
           <button
             disabled={idx === layout.sheets.length - 1}
@@ -58,8 +61,8 @@ export function LayoutViewer() {
 
       <SheetCanvas
         sheet={sheet}
-        sheetWidth={material?.size.width ?? 0}
-        sheetHeight={material?.size.height ?? 0}
+        sheetWidth={sheet.width}
+        sheetHeight={sheet.height}
       />
 
       {layout.unplacedPieces.length > 0 && (

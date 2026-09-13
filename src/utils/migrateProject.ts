@@ -8,6 +8,7 @@ interface LegacyProject {
   settings?: { size?: { label: string; width: number; height: number; custom?: boolean } };
   materials?: MaterialStock[];
   pieces?: (PieceDefinition & { materialId?: string })[];
+  offcutStock?: Project['offcutStock'];
 }
 
 function defaultMaterial(): MaterialStock {
@@ -42,6 +43,8 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     );
     return matchedSize ? { ...m, size: matchedSize } : m;
   });
+
+  project.offcutStock = project.offcutStock ?? [];
 
   return project;
 }

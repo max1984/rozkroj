@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
-import type { PieceDefinition, CuttingSettings, MaterialStock, LayoutResult, Project } from '../types';
+import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
 import { DEFAULT_SHEET_SIZE } from '../constants/sheetSizes';
 import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, DEFAULT_MATERIAL_NAME } from '../constants/defaults';
 import { getPieceColor } from '../utils/colors';
@@ -33,7 +33,7 @@ interface AppState {
   darkMode: boolean;
 
   // Offcuts (saved stock)
-  offcutStock: { width: number; height: number; label: string }[];
+  offcutStock: OffcutItem[];
 
   // Actions
   setProjectName: (name: string) => void;
@@ -59,8 +59,8 @@ interface AppState {
   loadProject: (project: Project) => void;
   exportProject: () => Project;
 
-  addOffcut: (w: number, h: number) => void;
-  removeOffcut: (index: number) => void;
+  addOffcut: (materialId: string, w: number, h: number) => void;
+  removeOffcut: (id: string) => void;
 }
 
 const DEFAULT_SETTINGS: CuttingSettings = {
@@ -146,8 +146,8 @@ export const useStore = create<AppState>()(
       },
 
       recomputeLayout: () => {
-        const { pieces, materials, settings, algorithm } = get();
-        const layout = runOptimizer(pieces, materials, settings, algorithm);
+        const { pieces, materials, offcutStock, settings, algorithm } = get();
+        const layout = runOptimizer(pieces, materials, offcutStock, settings, algorithm);
         set({ layout });
       },
 
@@ -168,6 +168,7 @@ export const useStore = create<AppState>()(
           settings: project.settings,
           materials: project.materials,
           pieces: project.pieces,
+          offcutStock: project.offcutStock,
         });
         get().recomputeLayout();
       },
@@ -183,16 +184,19 @@ export const useStore = create<AppState>()(
           unit: s.unit,
           algorithm: s.algorithm,
           pieces: s.pieces,
+          offcutStock: s.offcutStock,
         };
       },
 
-      addOffcut: (w, h) => {
+      addOffcut: (materialId, w, h) => {
         set(state => ({
-          offcutStock: [...state.offcutStock, { width: w, height: h, label: `${w}×${h} mm` }],
+          offcutStock: [...state.offcutStock, { id: nanoid(), materialId, width: w, height: h, label: `${w}×${h} mm` }],
         }));
+        get().recomputeLayout();
       },
-      removeOffcut: (index) => {
-        set(state => ({ offcutStock: state.offcutStock.filter((_, i) => i !== index) }));
+      removeOffcut: (id) => {
+        set(state => ({ offcutStock: state.offcutStock.filter(o => o.id !== id) }));
+        get().recomputeLayout();
       },
     }),
     {
