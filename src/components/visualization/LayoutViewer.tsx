@@ -49,14 +49,9 @@ export function LayoutViewer() {
           </button>
         </div>
 
-        <div className="flex items-center gap-3 text-sm">
-          <span className={`font-medium ${sheet.wastePercent > 30 ? 'text-red-500' : sheet.wastePercent > 15 ? 'text-amber-500' : 'text-green-600'}`}>
-            {sheet.wastePercent}% waste
-          </span>
-          <span className="text-gray-400 text-xs">
-            Total: {layout.totalWastePercent}% across {layout.sheets.length} sheet{layout.sheets.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+        <span className={`text-sm font-medium ${sheet.wastePercent > 30 ? 'text-red-500' : sheet.wastePercent > 15 ? 'text-amber-500' : 'text-green-600'}`}>
+          {sheet.wastePercent}% waste on this sheet
+        </span>
       </div>
 
       <SheetCanvas

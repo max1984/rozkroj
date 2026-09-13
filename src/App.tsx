@@ -4,6 +4,7 @@ import { useStore } from './store';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LayoutViewer } from './components/visualization/LayoutViewer';
+import { SummaryPanel } from './components/visualization/SummaryPanel';
 
 export default function App() {
   const darkMode = useStore(s => s.darkMode);
@@ -30,7 +31,8 @@ export default function App() {
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto p-5">
+        <main className="flex-1 overflow-auto p-5 space-y-4">
+          <SummaryPanel />
           <LayoutViewer />
         </main>
       </div>
