@@ -6,12 +6,20 @@ import { DEFAULT_SHEET_SIZE } from '../constants/sheetSizes';
 import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, DEFAULT_MATERIAL_NAME } from '../constants/defaults';
 import { getPieceColor } from '../utils/colors';
 import { runOptimizer } from '../algorithms/optimizer';
-import { migrateProject } from '../utils/migrateProject';
+import {
+  saveProjectToLibrary,
+  loadProjectFromLibrary,
+  deleteProjectFromLibrary,
+  migrateLegacySingleProject,
+  getActiveProjectId,
+  setActiveProjectId,
+} from '../utils/projectLibrary';
 
 interface AppState {
   // Project meta
   projectId: string;
   projectName: string;
+  projectCreatedAt: number;
 
   // Settings
   unit: 'mm' | 'inch';
@@ -59,6 +67,11 @@ interface AppState {
   loadProject: (project: Project) => void;
   exportProject: () => Project;
 
+  newProject: () => void;
+  duplicateProject: () => void;
+  loadProjectById: (id: string) => void;
+  deleteProjectById: (id: string) => void;
+
   addOffcut: (materialId: string, w: number, h: number) => void;
   removeOffcut: (id: string) => void;
 }
@@ -79,21 +92,28 @@ function defaultMaterial(): MaterialStock {
   };
 }
 
+function blankProject(name = 'My Project') {
+  return {
+    projectId: nanoid(),
+    projectName: name,
+    projectCreatedAt: Date.now(),
+    unit: 'mm' as const,
+    algorithm: 'maxrects' as const,
+    settings: DEFAULT_SETTINGS,
+    materials: [defaultMaterial()],
+    pieces: [],
+    offcutStock: [],
+  };
+}
+
 export const useStore = create<AppState>()(
   temporal(
     (set, get) => ({
-      projectId: nanoid(),
-      projectName: 'My Project',
-      unit: 'mm',
-      algorithm: 'maxrects',
-      settings: DEFAULT_SETTINGS,
-      materials: [defaultMaterial()],
-      pieces: [],
+      ...blankProject(),
       layout: null,
       selectedPieceId: null,
       hoveredPieceId: null,
       darkMode: false,
-      offcutStock: [],
 
       setProjectName: (name) => set({ projectName: name }),
       setUnit: (unit) => set({ unit }),
@@ -156,13 +176,13 @@ export const useStore = create<AppState>()(
       toggleDarkMode: () => set(state => ({ darkMode: !state.darkMode })),
 
       saveProject: () => {
-        const project = get().exportProject();
-        localStorage.setItem('rozkroj_project', JSON.stringify(project));
+        saveProjectToLibrary(get().exportProject());
       },
       loadProject: (project) => {
         set({
           projectId: project.id,
           projectName: project.name,
+          projectCreatedAt: project.createdAt,
           unit: project.unit,
           algorithm: project.algorithm,
           settings: project.settings,
@@ -177,7 +197,7 @@ export const useStore = create<AppState>()(
         return {
           id: s.projectId,
           name: s.projectName,
-          createdAt: Date.now(),
+          createdAt: s.projectCreatedAt,
           updatedAt: Date.now(),
           settings: s.settings,
           materials: s.materials,
@@ -186,6 +206,27 @@ export const useStore = create<AppState>()(
           pieces: s.pieces,
           offcutStock: s.offcutStock,
         };
+      },
+
+      newProject: () => {
+        set({ ...blankProject('New Project'), layout: null, selectedPieceId: null, hoveredPieceId: null });
+        get().recomputeLayout();
+      },
+      duplicateProject: () => {
+        const project = get().exportProject();
+        const copy: Project = { ...project, id: nanoid(), name: `${project.name} (copy)`, createdAt: Date.now(), updatedAt: Date.now() };
+        saveProjectToLibrary(copy);
+        get().loadProject(copy);
+      },
+      loadProjectById: (id) => {
+        const project = loadProjectFromLibrary(id);
+        if (!project) return;
+        setActiveProjectId(id);
+        get().loadProject(project);
+      },
+      deleteProjectById: (id) => {
+        deleteProjectFromLibrary(id);
+        if (get().projectId === id) get().newProject();
       },
 
       addOffcut: (materialId, w, h) => {
@@ -212,11 +253,11 @@ export const useStore = create<AppState>()(
   )
 );
 
-// Load saved project on startup
-const saved = localStorage.getItem('rozkroj_project');
-if (saved) {
-  try {
-    const project = migrateProject(JSON.parse(saved));
-    useStore.getState().loadProject(project);
-  } catch { /* ignore corrupt save */ }
+// Resume the most recently active project on startup, migrating the old
+// single-project save into the library the first time this code runs.
+migrateLegacySingleProject();
+const activeId = getActiveProjectId();
+if (activeId) {
+  const project = loadProjectFromLibrary(activeId);
+  if (project) useStore.getState().loadProject(project);
 }

@@ -5,6 +5,7 @@ import { useStore } from '../../store';
 import { exportCsv } from '../../utils/csv';
 import { generatePdf } from '../../utils/pdf';
 import { useSaveLoad } from '../../hooks/useLocalStorage';
+import { ProjectLibrary } from './ProjectLibrary';
 
 export function Toolbar() {
   const projectName = useStore(s => s.projectName);
@@ -64,10 +65,11 @@ export function Toolbar() {
       <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
 
       {/* Save / Load */}
-      <button onClick={save} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Save to browser">
+      <ProjectLibrary />
+      <button onClick={save} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Save project">
         <Save size={15} />
       </button>
-      <label className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-pointer" title="Open project file">
+      <label className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-pointer" title="Import project file">
         <FolderOpen size={15} />
         <input
           type="file"
