@@ -7,11 +7,11 @@ import { OffcutStock } from '../pieces/OffcutStock';
 
 export function Sidebar() {
   return (
-    <aside className="w-72 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto flex flex-col bg-gray-50 dark:bg-gray-800/50">
+    <aside className="w-72 flex-shrink-0 border-r border-line overflow-y-auto flex flex-col bg-surface-2">
       <div className="p-4 space-y-5 flex-1">
         {/* Unit toggle at top */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Settings</span>
+          <span className="text-[11px] font-mono font-semibold uppercase tracking-widest text-muted">Settings</span>
           <UnitToggle />
         </div>
 
@@ -19,11 +19,11 @@ export function Sidebar() {
         <KerfSettings />
         <AlgorithmPicker />
 
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="border-t border-line pt-4">
           <PieceList />
         </div>
 
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div className="border-t border-line pt-4">
           <OffcutStock />
         </div>
       </div>

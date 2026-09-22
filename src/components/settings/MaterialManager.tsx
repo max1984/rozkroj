@@ -21,12 +21,12 @@ export function MaterialManager() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Materials</label>
+        <label className="text-sm font-medium text-ink">Materials</label>
         <button
           onClick={() => {
             addMaterial({ name: `${DEFAULT_MATERIAL_NAME} (${materials.length + 1})`, size: DEFAULT_SHEET_SIZE, pricePerSheet: 0 });
           }}
-          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+          className="icon-btn !p-1"
           title="Add material"
         >
           <Plus size={14} />
@@ -66,35 +66,35 @@ function MaterialRow({
   const isCustom = material.size.custom;
 
   return (
-    <div className="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+    <div className="card overflow-hidden">
       <button
         onClick={onToggle}
         className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: material.color }} />
         <span className="flex-1 min-w-0 text-sm font-medium truncate">{material.name}</span>
-        <span className="text-xs text-gray-400 flex-shrink-0">
+        <span className="text-xs font-mono tabular-nums text-muted flex-shrink-0">
           {format(material.size.width)} × {format(material.size.height)}
         </span>
-        {expanded ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+        {expanded ? <ChevronUp size={14} className="text-muted" /> : <ChevronDown size={14} className="text-muted" />}
       </button>
 
       {expanded && (
-        <div className="px-2.5 pb-2.5 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-2">
+        <div className="px-2.5 pb-2.5 space-y-2 border-t border-line pt-2">
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Name</label>
+            <label className="block text-xs text-muted mb-1">Name</label>
             <input
               type="text"
-              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+              className="field"
               value={material.name}
               onChange={e => onUpdate({ name: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Sheet size</label>
+            <label className="block text-xs text-muted mb-1">Sheet size</label>
             <select
-              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+              className="field"
               value={isCustom ? 'custom' : `${material.size.width}x${material.size.height}`}
               onChange={e => {
                 if (e.target.value === 'custom') {
@@ -116,7 +116,7 @@ function MaterialRow({
             <div className="flex gap-2 items-center">
               <input
                 type="number"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+                className="field"
                 placeholder={`Width (${unit})`}
                 defaultValue={inputValue(material.size.width)}
                 onBlur={e => {
@@ -124,10 +124,10 @@ function MaterialRow({
                   if (w > 0) onUpdate({ size: { ...material.size, width: w } });
                 }}
               />
-              <span className="text-gray-500">×</span>
+              <span className="text-muted">×</span>
               <input
                 type="number"
-                className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+                className="field"
                 placeholder={`Height (${unit})`}
                 defaultValue={inputValue(material.size.height)}
                 onBlur={e => {
@@ -139,12 +139,12 @@ function MaterialRow({
           )}
 
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Price per sheet</label>
+            <label className="block text-xs text-muted mb-1">Price per sheet</label>
             <input
               type="number"
               min="0"
               step="0.01"
-              className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+              className="field"
               value={material.pricePerSheet || ''}
               placeholder="0"
               onChange={e => onUpdate({ pricePerSheet: parseFloat(e.target.value) || 0 })}
@@ -152,11 +152,11 @@ function MaterialRow({
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-gray-400">{count} piece{count !== 1 ? 's' : ''} using this material</span>
+            <span className="text-xs text-muted">{count} piece{count !== 1 ? 's' : ''} using this material</span>
             {removable && (
               <button
                 onClick={onRemove}
-                className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500"
+                className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
                 title="Remove material"
               >
                 <Trash2 size={13} />

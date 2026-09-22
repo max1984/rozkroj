@@ -24,7 +24,7 @@ export function PieceRow({ piece }: Props) {
 
   if (editing) {
     return (
-      <div className="border border-blue-300 dark:border-blue-700 rounded-lg overflow-hidden">
+      <div className="border border-accent rounded-lg overflow-hidden">
         <PieceForm editing={piece} onClose={() => setEditing(false)} />
       </div>
     );
@@ -32,35 +32,35 @@ export function PieceRow({ piece }: Props) {
 
   return (
     <div
-      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'}`}
+      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-accent bg-accent-soft' : 'border-line hover:border-muted'}`}
       onClick={() => setSelectedPieceId(isSelected ? null : piece.id)}
       onMouseEnter={() => setHoveredPieceId(piece.id)}
       onMouseLeave={() => setHoveredPieceId(null)}
     >
-      <GripVertical size={14} className="text-gray-400 flex-shrink-0" />
+      <GripVertical size={14} className="text-muted flex-shrink-0" />
       <div
         className="w-3 h-3 rounded-sm flex-shrink-0"
         style={{ backgroundColor: piece.color }}
       />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium truncate">{piece.name}</div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="text-xs font-mono tabular-nums text-muted">
           {format(piece.width)} × {format(piece.height)} × {piece.quantity}
-          {material && materials.length > 1 && <span className="ml-1">· {material.name}</span>}
-          {piece.grain !== 'none' && <span className="ml-1 text-amber-600 dark:text-amber-400">⟶ grain</span>}
-          {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 text-teal-600 dark:text-teal-400">▭ edge</span>}
-          {piece.priority && <span className="ml-1 text-purple-600 dark:text-purple-400">★</span>}
+          {material && materials.length > 1 && <span className="ml-1 font-sans">· {material.name}</span>}
+          {piece.grain !== 'none' && <span className="ml-1 font-sans text-warn">⟶ grain</span>}
+          {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 font-sans text-accent">▭ edge</span>}
+          {piece.priority && <span className="ml-1 font-sans text-warn">★</span>}
         </div>
       </div>
       <button
         onClick={e => { e.stopPropagation(); setEditing(true); }}
-        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+        className="p-1 rounded-md hover:bg-surface-2 text-muted"
       >
         <Pencil size={13} />
       </button>
       <button
         onClick={e => { e.stopPropagation(); removePiece(piece.id); }}
-        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-500"
+        className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
       >
         <Trash2 size={13} />
       </button>

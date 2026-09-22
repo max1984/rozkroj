@@ -17,11 +17,11 @@ export function EdgeBandingPicker({ value, onChange }: Props) {
 
   return (
     <div>
-      <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-        Edge banding <span className="text-gray-400">(click the edges to band)</span>
+      <label className="block text-xs text-muted mb-1">
+        Edge banding <span className="text-muted">(click the edges to band)</span>
       </label>
       <div className="relative w-24 h-16 mx-auto my-1">
-        <div className="absolute inset-[7px] border border-gray-300 dark:border-gray-600 rounded-sm bg-gray-50 dark:bg-gray-800" />
+        <div className="absolute inset-[7px] border border-line rounded-sm bg-bg" />
         {EDGES.map(edge => (
           <button
             key={edge.key}
@@ -29,7 +29,7 @@ export function EdgeBandingPicker({ value, onChange }: Props) {
             title={edge.label}
             onClick={() => toggle(edge.key)}
             className={`absolute rounded-full transition-colors ${edge.className} ${
-              value[edge.key] ? 'bg-amber-500' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+              value[edge.key] ? 'bg-accent' : 'bg-surface-2 hover:bg-line'
             }`}
           />
         ))}

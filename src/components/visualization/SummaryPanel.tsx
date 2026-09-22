@@ -4,15 +4,15 @@ import { totalBandingLengthMm } from '../../utils/edgeBanding';
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'warn' | 'danger' }) {
   const toneClass = tone === 'danger'
-    ? 'text-red-600 dark:text-red-400'
+    ? 'text-danger'
     : tone === 'warn'
-      ? 'text-amber-600 dark:text-amber-400'
-      : 'text-gray-800 dark:text-gray-100';
+      ? 'text-warn'
+      : 'text-ink';
 
   return (
     <div className="flex flex-col">
-      <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">{label}</span>
-      <span className={`text-lg font-semibold tabular-nums ${toneClass}`}>{value}</span>
+      <span className="text-[10px] font-mono uppercase tracking-widest text-muted">{label}</span>
+      <span className={`text-lg font-semibold font-mono tabular-nums ${toneClass}`}>{value}</span>
     </div>
   );
 }
@@ -29,7 +29,7 @@ export function SummaryPanel() {
   const bandingMm = totalBandingLengthMm(pieces);
 
   return (
-    <div className="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
+    <div className="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-lg border border-line border-l-2 border-l-accent bg-surface-2 px-4 py-3">
       <Stat label="Sheets" value={`${freshSheets}${offcutSheets > 0 ? ` +${offcutSheets} offcut` : ''}`} />
       <Stat
         label="Total waste"

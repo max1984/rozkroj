@@ -1,11 +1,20 @@
 import { useState } from 'react';
-import { Undo2, Redo2, Save, FolderOpen, Download, FileDown, Sun, Moon, Layers } from 'lucide-react';
+import { Undo2, Redo2, Save, FolderOpen, Download, FileDown, Sun, Moon } from 'lucide-react';
 import { useStore as useZustand } from 'zustand';
 import { useStore } from '../../store';
 import { exportCsv } from '../../utils/csv';
 import { generatePdf } from '../../utils/pdf';
 import { useSaveLoad } from '../../hooks/useLocalStorage';
 import { ProjectLibrary } from './ProjectLibrary';
+
+function CutMark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="1.5" y="1.5" width="17" height="17" rx="1.5" stroke="currentColor" strokeWidth="1.4" className="text-line" />
+      <path d="M2 13 L13 2" stroke="var(--color-accent)" strokeWidth="1.6" strokeDasharray="2.4 2" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function Toolbar() {
   const projectName = useStore(s => s.projectName);
@@ -30,12 +39,12 @@ export function Toolbar() {
   };
 
   return (
-    <header className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <header className="flex items-center gap-3 px-4 py-2.5 border-b border-line bg-surface">
       {/* Logo */}
       <div className="flex items-center gap-2 mr-2">
-        <Layers size={20} className="text-blue-600" />
+        <CutMark />
         <input
-          className="font-semibold text-gray-800 dark:text-gray-100 bg-transparent border-none outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 text-sm"
+          className="font-semibold text-ink bg-transparent border-none outline-none focus:ring-1 focus:ring-accent rounded-sm px-1 text-sm"
           value={projectName}
           onChange={e => setProjectName(e.target.value)}
           title="Click to rename project"
@@ -47,7 +56,7 @@ export function Toolbar() {
         <button
           onClick={() => undo()}
           disabled={pastStates.length === 0}
-          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 text-gray-600 dark:text-gray-400"
+          className="icon-btn"
           title="Undo (⌘Z)"
         >
           <Undo2 size={15} />
@@ -55,21 +64,21 @@ export function Toolbar() {
         <button
           onClick={() => redo()}
           disabled={futureStates.length === 0}
-          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 text-gray-600 dark:text-gray-400"
+          className="icon-btn"
           title="Redo (⌘⇧Z)"
         >
           <Redo2 size={15} />
         </button>
       </div>
 
-      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+      <div className="w-px h-5 bg-line" />
 
       {/* Save / Load */}
       <ProjectLibrary />
-      <button onClick={save} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Save project">
+      <button onClick={save} className="icon-btn" title="Save project">
         <Save size={15} />
       </button>
-      <label className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-pointer" title="Import project file">
+      <label className="icon-btn cursor-pointer" title="Import project file">
         <FolderOpen size={15} />
         <input
           type="file"
@@ -78,17 +87,17 @@ export function Toolbar() {
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFromFile(f); e.target.value = ''; }}
         />
       </label>
-      <button onClick={exportToFile} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400" title="Export project file">
+      <button onClick={exportToFile} className="icon-btn" title="Export project file">
         <Download size={15} />
       </button>
 
-      <div className="w-px h-5 bg-gray-200 dark:bg-gray-700" />
+      <div className="w-px h-5 bg-line" />
 
       {/* CSV Export */}
       <button
         onClick={() => exportCsv(pieces, materials, unit)}
         disabled={pieces.length === 0}
-        className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 disabled:opacity-30"
+        className="icon-btn"
         title="Export cut list as CSV"
       >
         <FileDown size={15} />
@@ -99,17 +108,17 @@ export function Toolbar() {
         <button
           onClick={() => setShowPdfOpts(v => !v)}
           disabled={!layout || layout.sheets.length === 0}
-          className="flex items-center gap-1 px-2.5 py-1 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1 px-3 py-1 rounded-md bg-accent text-accent-ink text-xs font-semibold tracking-wide hover:brightness-105 disabled:opacity-40 transition"
         >
           PDF
         </button>
         {showPdfOpts && (
-          <div className="absolute right-0 top-8 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 w-52 space-y-2">
+          <div className="absolute right-0 top-9 z-10 bg-surface border border-line rounded-lg shadow-lg p-3 w-52 space-y-2">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={pdfAllOnOne} onChange={e => setPdfAllOnOne(e.target.checked)} />
               All sheets on one page
             </label>
-            <button onClick={handlePdf} className="w-full rounded bg-blue-600 text-white px-3 py-1.5 text-sm hover:bg-blue-700">
+            <button onClick={handlePdf} className="w-full rounded-md bg-accent text-accent-ink px-3 py-1.5 text-sm font-medium hover:brightness-105">
               Download PDF
             </button>
           </div>
@@ -119,7 +128,7 @@ export function Toolbar() {
       <div className="flex-1" />
 
       {/* Dark mode */}
-      <button onClick={toggleDarkMode} className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400">
+      <button onClick={toggleDarkMode} className="icon-btn" title="Toggle theme">
         {darkMode ? <Sun size={15} /> : <Moon size={15} />}
       </button>
     </header>

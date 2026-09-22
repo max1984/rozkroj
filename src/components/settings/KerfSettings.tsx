@@ -9,24 +9,24 @@ export function KerfSettings() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Fresh Edge</label>
+        <label className="text-sm font-medium text-ink">Fresh Edge</label>
         <button
           onClick={() => setSettings({ freshEdge: !settings.freshEdge })}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.freshEdge ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.freshEdge ? 'bg-accent' : 'bg-surface-2'}`}
         >
-          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${settings.freshEdge ? 'translate-x-4' : 'translate-x-1'}`} />
+          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface transition-transform ${settings.freshEdge ? 'translate-x-4' : 'translate-x-1'}`} />
         </button>
       </div>
 
       {settings.freshEdge && (
         <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-            Trim per side ({format(settings.freshEdgeTrim)})
+          <label className="block text-xs text-muted mb-1">
+            Trim per side (<span className="font-mono">{format(settings.freshEdgeTrim)}</span>)
           </label>
           <input
             type="number"
             min="0"
-            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            className="field font-mono tabular-nums"
             value={inputValue(settings.freshEdgeTrim)}
             onChange={e => {
               const v = toMm(parseFloat(e.target.value));
@@ -37,14 +37,14 @@ export function KerfSettings() {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Saw Kerf ({format(settings.sawKerf)})
+        <label className="block text-sm font-medium text-ink mb-1">
+          Saw Kerf (<span className="font-mono">{format(settings.sawKerf)}</span>)
         </label>
         <input
           type="number"
           min="0"
           step="0.5"
-          className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+          className="field font-mono tabular-nums"
           value={inputValue(settings.sawKerf)}
           onChange={e => {
             const v = toMm(parseFloat(e.target.value));

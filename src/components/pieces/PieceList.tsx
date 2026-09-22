@@ -29,22 +29,22 @@ export function PieceList() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 className="text-sm font-semibold text-ink">
           Pieces
           {pieces.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-gray-400">
+            <span className="ml-2 text-xs font-mono font-normal text-muted">
               ({pieces.reduce((s, p) => s + p.quantity, 0)} total)
             </span>
           )}
         </h2>
         <div className="flex gap-1">
-          <label className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 cursor-pointer" title="Import CSV">
+          <label className="icon-btn !p-1 cursor-pointer" title="Import CSV">
             <Upload size={14} />
             <input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
           </label>
           <button
             onClick={() => setAdding(true)}
-            className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+            className="icon-btn !p-1"
             title="Add piece"
           >
             <Plus size={14} />
@@ -53,15 +53,15 @@ export function PieceList() {
       </div>
 
       {adding && (
-        <div className="border border-blue-300 dark:border-blue-700 rounded-lg overflow-hidden">
+        <div className="border border-accent rounded-lg overflow-hidden">
           <PieceForm onClose={() => setAdding(false)} />
         </div>
       )}
 
       {pieces.length === 0 && !adding && (
-        <div className="text-center py-8 text-sm text-gray-400 dark:text-gray-500">
+        <div className="text-center py-8 text-sm text-muted">
           No pieces yet.<br />
-          <button onClick={() => setAdding(true)} className="text-blue-500 hover:underline mt-1">Add your first piece</button>
+          <button onClick={() => setAdding(true)} className="text-accent hover:underline mt-1">Add your first piece</button>
         </div>
       )}
 

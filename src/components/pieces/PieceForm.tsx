@@ -43,10 +43,10 @@ export function PieceForm({ editing, onClose }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3 p-4">
       <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Name (optional)</label>
+        <label className="block text-xs text-muted mb-1">Name (optional)</label>
         <input
           type="text"
-          className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+          className="field"
           placeholder="e.g. Left Side"
           value={name}
           onChange={e => setName(e.target.value)}
@@ -55,9 +55,9 @@ export function PieceForm({ editing, onClose }: Props) {
 
       {materials.length > 1 && (
         <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Material</label>
+          <label className="block text-xs text-muted mb-1">Material</label>
           <select
-            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            className="field"
             value={materialId}
             onChange={e => setMaterialId(e.target.value)}
           >
@@ -70,36 +70,36 @@ export function PieceForm({ editing, onClose }: Props) {
 
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Width ({unit})</label>
+          <label className="block text-xs text-muted mb-1">Width ({unit})</label>
           <input
             required
             type="number"
             min="1"
             step="any"
-            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            className="field font-mono tabular-nums"
             value={width}
             onChange={e => setWidth(e.target.value)}
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Height ({unit})</label>
+          <label className="block text-xs text-muted mb-1">Height ({unit})</label>
           <input
             required
             type="number"
             min="1"
             step="any"
-            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            className="field font-mono tabular-nums"
             value={height}
             onChange={e => setHeight(e.target.value)}
           />
         </div>
         <div className="w-20">
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Qty</label>
+          <label className="block text-xs text-muted mb-1">Qty</label>
           <input
             required
             type="number"
             min="1"
-            className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+            className="field font-mono tabular-nums"
             value={qty}
             onChange={e => setQty(e.target.value)}
           />
@@ -107,9 +107,9 @@ export function PieceForm({ editing, onClose }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Grain Direction</label>
+        <label className="block text-xs text-muted mb-1">Grain Direction</label>
         <select
-          className="w-full rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-sm"
+          className="field"
           value={grain}
           onChange={e => setGrain(e.target.value as GrainDirection)}
         >
@@ -121,11 +121,11 @@ export function PieceForm({ editing, onClose }: Props) {
 
       <div className="flex gap-4">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={rotationAllowed} onChange={e => setRotationAllowed(e.target.checked)} className="rounded" />
+          <input type="checkbox" checked={rotationAllowed} onChange={e => setRotationAllowed(e.target.checked)} className="rounded accent-accent" />
           Allow rotation
         </label>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={priority} onChange={e => setPriority(e.target.checked)} className="rounded" />
+          <input type="checkbox" checked={priority} onChange={e => setPriority(e.target.checked)} className="rounded accent-accent" />
           Priority piece
         </label>
       </div>
@@ -135,14 +135,14 @@ export function PieceForm({ editing, onClose }: Props) {
       <div className="flex gap-2 pt-1">
         <button
           type="submit"
-          className="flex-1 rounded bg-blue-600 text-white px-3 py-2 text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex-1 btn-accent px-3 py-2 text-sm"
         >
           {editing ? 'Update' : 'Add Piece'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="rounded border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          className="rounded-md border border-line px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
         >
           Cancel
         </button>

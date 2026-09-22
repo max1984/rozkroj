@@ -27,7 +27,7 @@ export default function App() {
   }, [undo, redo]);
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="flex flex-col h-screen bg-bg text-ink">
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />

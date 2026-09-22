@@ -1,7 +1,81 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: #eef1f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #e4e9ea;
+  --color-ink: #16211f;
+  --color-muted: #5c6e70;
+  --color-line: #d5dedf;
+  --color-accent: #d6521a;
+  --color-accent-ink: #ffffff;
+  --color-accent-soft: #fbe4d7;
+  --color-good: #2f7d5a;
+  --color-good-soft: #e1f0e6;
+  --color-warn: #9a6b16;
+  --color-warn-soft: #f8ecd4;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fbe4e1;
+}
+
+.dark {
+  --color-bg: #12181a;
+  --color-surface: #1a2224;
+  --color-surface-2: #212b2d;
+  --color-ink: #e9efee;
+  --color-muted: #8ea3a5;
+  --color-line: #2b3639;
+  --color-accent: #ff7c3e;
+  --color-accent-ink: #12181a;
+  --color-accent-soft: #3a2416;
+  --color-good: #5fbf8f;
+  --color-good-soft: #17332580;
+  --color-warn: #e0ac4c;
+  --color-warn-soft: #3a2c1180;
+  --color-danger: #ef6b5c;
+  --color-danger-soft: #3a1a1780;
+}
 
 @layer base {
   :root {
     color-scheme: light dark;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-ink);
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-ink);
+  }
+
+  * {
+    scrollbar-color: var(--color-line) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@layer components {
+  .field {
+    @apply w-full rounded-md border border-line bg-surface px-2 py-1.5 text-sm text-ink;
+  }
+
+  .icon-btn {
+    @apply p-1.5 rounded-md hover:bg-surface-2 text-muted transition-colors disabled:opacity-30;
+  }
+
+  .btn-accent {
+    @apply rounded-md bg-accent text-accent-ink font-medium hover:brightness-105 transition disabled:opacity-40;
+  }
+
+  .card {
+    @apply rounded-lg border border-line bg-surface;
   }
 }

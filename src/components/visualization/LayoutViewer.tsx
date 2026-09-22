@@ -11,7 +11,7 @@ export function LayoutViewer() {
 
   if (!layout || layout.sheets.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
+      <div className="flex-1 flex items-center justify-center text-muted text-sm">
         {pieces.length === 0 ? 'Add pieces to see the layout' : 'Computing layout…'}
       </div>
     );
@@ -29,27 +29,27 @@ export function LayoutViewer() {
           <button
             disabled={idx === 0}
             onClick={() => setSheetIdx(i => i - 1)}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
+            className="icon-btn !p-1"
           >
             <ChevronLeft size={16} />
           </button>
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium font-mono tabular-nums">
             Sheet {idx + 1} / {layout.sheets.length}
-            {material && materials.length > 1 && <span className="text-gray-400 font-normal"> — {material.name}</span>}
+            {material && materials.length > 1 && <span className="text-muted font-normal font-sans"> — {material.name}</span>}
             {sheet.sourceOffcutId && (
-              <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400 align-middle">offcut</span>
+              <span className="ml-1.5 text-[10px] font-sans font-semibold uppercase tracking-wide text-good align-middle">offcut</span>
             )}
           </span>
           <button
             disabled={idx === layout.sheets.length - 1}
             onClick={() => setSheetIdx(i => i + 1)}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30"
+            className="icon-btn !p-1"
           >
             <ChevronRight size={16} />
           </button>
         </div>
 
-        <span className={`text-sm font-medium ${sheet.wastePercent > 30 ? 'text-red-500' : sheet.wastePercent > 15 ? 'text-amber-500' : 'text-green-600'}`}>
+        <span className={`text-sm font-medium font-mono tabular-nums ${sheet.wastePercent > 30 ? 'text-danger' : sheet.wastePercent > 15 ? 'text-warn' : 'text-good'}`}>
           {sheet.wastePercent}% waste on this sheet
         </span>
       </div>
@@ -61,7 +61,7 @@ export function LayoutViewer() {
       />
 
       {layout.unplacedPieces.length > 0 && (
-        <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
           ⚠ {layout.unplacedPieces.length} piece{layout.unplacedPieces.length !== 1 ? 's' : ''} could not be placed (too large for sheet)
         </div>
       )}

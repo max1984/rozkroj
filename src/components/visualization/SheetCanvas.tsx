@@ -13,25 +13,41 @@ interface Props {
 const CANVAS_MAX_W = 700;
 const CANVAS_MAX_H = 500;
 
+const PALETTE = {
+  light: { sheetBg: '#ffffff', grid: '#e3e8e9', waste: 'rgba(179,38,30,0.07)', wasteStroke: 'rgba(179,38,30,0.28)', ruler: '#5c6e70', highlight: '#d6521a', banding: '#d6521a' },
+  dark: { sheetBg: '#1a2224', grid: '#263032', waste: 'rgba(239,107,92,0.1)', wasteStroke: 'rgba(239,107,92,0.32)', ruler: '#8ea3a5', highlight: '#ff7c3e', banding: '#ff7c3e' },
+};
+
 export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
   const pieces = useStore(s => s.pieces);
   const selectedPieceId = useStore(s => s.selectedPieceId);
   const hoveredPieceId = useStore(s => s.hoveredPieceId);
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
   const setHoveredPieceId = useStore(s => s.setHoveredPieceId);
+  const darkMode = useStore(s => s.darkMode);
+  const c = darkMode ? PALETTE.dark : PALETTE.light;
 
   const scale = Math.min(CANVAS_MAX_W / sheetWidth, CANVAS_MAX_H / sheetHeight);
   const canvasW = Math.round(sheetWidth * scale);
   const canvasH = Math.round(sheetHeight * scale);
 
   const pieceMap = new Map(pieces.map(p => [p.id, p]));
+  const gridStep = sheetWidth > 2000 ? 200 : 100; // mm
 
   return (
     <div className="overflow-auto">
-      <Stage width={canvasW} height={canvasH} className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900">
+      <Stage width={canvasW} height={canvasH} className="border border-line rounded-lg">
         <Layer>
           {/* Sheet background */}
-          <Rect x={0} y={0} width={canvasW} height={canvasH} fill="#f9fafb" />
+          <Rect x={0} y={0} width={canvasW} height={canvasH} fill={c.sheetBg} />
+
+          {/* Blueprint grid */}
+          {Array.from({ length: Math.floor(sheetWidth / gridStep) + 1 }, (_, i) => i * gridStep).map(mm => (
+            <Line key={`gx-${mm}`} points={[mm * scale, 0, mm * scale, canvasH]} stroke={c.grid} strokeWidth={1} />
+          ))}
+          {Array.from({ length: Math.floor(sheetHeight / gridStep) + 1 }, (_, i) => i * gridStep).map(mm => (
+            <Line key={`gy-${mm}`} points={[0, mm * scale, canvasW, mm * scale]} stroke={c.grid} strokeWidth={1} />
+          ))}
 
           {/* Waste areas (free rects) */}
           {sheet.freeRects.map((fr, i) => (
@@ -41,8 +57,8 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
               y={fr.y * scale}
               width={fr.width * scale}
               height={fr.height * scale}
-              fill="rgba(239,68,68,0.08)"
-              stroke="rgba(239,68,68,0.2)"
+              fill={c.waste}
+              stroke={c.wasteStroke}
               strokeWidth={0.5}
               dash={[4, 4]}
             />
@@ -74,7 +90,7 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
                   width={w}
                   height={h}
                   fill={def.color + (highlight ? 'ff' : 'cc')}
-                  stroke={highlight ? '#1d4ed8' : def.color}
+                  stroke={highlight ? c.highlight : def.color}
                   strokeWidth={highlight ? 2 : 1}
                   cornerRadius={2}
                 />
@@ -85,37 +101,36 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
                     width={w - 6}
                     text={def.name}
                     fontSize={Math.min(11, w / 5, h / 2)}
+                    fontFamily="IBM Plex Mono, monospace"
                     fill="white"
                     ellipsis
                   />
                 )}
-                <EdgeBandingOverlay banding={mapEdgeBandingForRotation(def.edgeBanding, pp.rotated)} x={x} y={y} w={w} h={h} />
+                <EdgeBandingOverlay banding={mapEdgeBandingForRotation(def.edgeBanding, pp.rotated)} x={x} y={y} w={w} h={h} color={c.banding} />
               </Group>
             );
           })}
 
           {/* Ruler - bottom */}
-          <RulerBottom sheetWidth={sheetWidth} canvasH={canvasH} scale={scale} />
+          <RulerBottom sheetWidth={sheetWidth} canvasH={canvasH} scale={scale} color={c.ruler} />
         </Layer>
       </Stage>
     </div>
   );
 }
 
-const BANDING_COLOR = '#d97706';
-
-function EdgeBandingOverlay({ banding, x, y, w, h }: { banding: { top: boolean; right: boolean; bottom: boolean; left: boolean }; x: number; y: number; w: number; h: number }) {
+function EdgeBandingOverlay({ banding, x, y, w, h, color }: { banding: { top: boolean; right: boolean; bottom: boolean; left: boolean }; x: number; y: number; w: number; h: number; color: string }) {
   return (
     <>
-      {banding.top && <Line points={[x, y, x + w, y]} stroke={BANDING_COLOR} strokeWidth={3} />}
-      {banding.bottom && <Line points={[x, y + h, x + w, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
-      {banding.left && <Line points={[x, y, x, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
-      {banding.right && <Line points={[x + w, y, x + w, y + h]} stroke={BANDING_COLOR} strokeWidth={3} />}
+      {banding.top && <Line points={[x, y, x + w, y]} stroke={color} strokeWidth={3} />}
+      {banding.bottom && <Line points={[x, y + h, x + w, y + h]} stroke={color} strokeWidth={3} />}
+      {banding.left && <Line points={[x, y, x, y + h]} stroke={color} strokeWidth={3} />}
+      {banding.right && <Line points={[x + w, y, x + w, y + h]} stroke={color} strokeWidth={3} />}
     </>
   );
 }
 
-function RulerBottom({ sheetWidth, canvasH, scale }: { sheetWidth: number; canvasH: number; scale: number }) {
+function RulerBottom({ sheetWidth, canvasH, scale, color }: { sheetWidth: number; canvasH: number; scale: number; color: string }) {
   const tickInterval = sheetWidth > 2000 ? 200 : sheetWidth > 1000 ? 100 : 50; // mm
   const ticks: number[] = [];
   for (let mm = 0; mm <= sheetWidth; mm += tickInterval) ticks.push(mm);
@@ -126,7 +141,7 @@ function RulerBottom({ sheetWidth, canvasH, scale }: { sheetWidth: number; canva
         <Group key={mm}>
           <Line
             points={[mm * scale, canvasH - 14, mm * scale, canvasH]}
-            stroke="#9ca3af"
+            stroke={color}
             strokeWidth={1}
           />
           <Text
@@ -134,8 +149,9 @@ function RulerBottom({ sheetWidth, canvasH, scale }: { sheetWidth: number; canva
             y={canvasH - 12}
             width={30}
             text={`${mm}`}
+            fontFamily="IBM Plex Mono, monospace"
             fontSize={9}
-            fill="#9ca3af"
+            fill={color}
             align="center"
           />
         </Group>
