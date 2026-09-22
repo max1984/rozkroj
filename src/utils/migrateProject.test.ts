@@ -34,7 +34,7 @@ function currentMaterial(overrides: Partial<MaterialStock> = {}): MaterialStock 
 
 describe('migrateProject', () => {
   it('creates a default material from the legacy single sheet size when materials are missing', () => {
-    const fullPiece: Record<string, unknown> = legacyPiece();
+    const fullPiece = legacyPiece() as unknown as Record<string, unknown>;
     delete fullPiece.materialId;
     const pieceWithoutMaterialId = fullPiece as unknown as PieceDefinition;
     const raw = {
