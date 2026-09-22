@@ -3,6 +3,7 @@ import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
 import { DEFAULT_EDGE_BANDING } from '../../constants/defaults';
+import { parsePositiveInt } from '../../utils/validation';
 import type { PieceDefinition, GrainDirection, EdgeBanding } from '../../types';
 
 interface Props {
@@ -30,12 +31,13 @@ export function PieceForm({ editing, onClose }: Props) {
     e.preventDefault();
     const w = toMm(parseFloat(width));
     const h = toMm(parseFloat(height));
-    if (!w || !h || w <= 0 || h <= 0) return;
+    const quantity = parsePositiveInt(qty);
+    if (!w || !h || w <= 0 || h <= 0 || quantity === null) return;
 
     if (editing) {
-      updatePiece(editing.id, { name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority, edgeBanding });
+      updatePiece(editing.id, { name: name || `${width}×${height}`, materialId, width: w, height: h, quantity, grain, rotationAllowed, priority, edgeBanding });
     } else {
-      addPiece({ name: name || `${width}×${height}`, materialId, width: w, height: h, quantity: parseInt(qty), grain, rotationAllowed, priority, edgeBanding });
+      addPiece({ name: name || `${width}×${height}`, materialId, width: w, height: h, quantity, grain, rotationAllowed, priority, edgeBanding });
     }
     onClose();
   };
