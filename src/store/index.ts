@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getInitialDarkMode, persistDarkMode } from '../utils/darkMode';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
 import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
@@ -113,7 +114,7 @@ export const useStore = create<AppState>()(
       layout: null,
       selectedPieceId: null,
       hoveredPieceId: null,
-      darkMode: false,
+      darkMode: getInitialDarkMode(),
 
       setProjectName: (name) => set({ projectName: name }),
       setUnit: (unit) => set({ unit }),
@@ -173,7 +174,11 @@ export const useStore = create<AppState>()(
 
       setSelectedPieceId: (id) => set({ selectedPieceId: id }),
       setHoveredPieceId: (id) => set({ hoveredPieceId: id }),
-      toggleDarkMode: () => set(state => ({ darkMode: !state.darkMode })),
+      toggleDarkMode: () => set(state => {
+        const darkMode = !state.darkMode;
+        persistDarkMode(darkMode);
+        return { darkMode };
+      }),
 
       saveProject: () => {
         saveProjectToLibrary(get().exportProject());
