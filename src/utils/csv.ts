@@ -4,7 +4,7 @@ import { toMm } from './units';
 import { getPieceColor } from './colors';
 import { nanoid } from 'nanoid';
 
-function edgesToString(p: PieceDefinition): string {
+export function edgesToString(p: PieceDefinition): string {
   const edges: string[] = [];
   if (p.edgeBanding.top) edges.push('top');
   if (p.edgeBanding.right) edges.push('right');
@@ -13,7 +13,7 @@ function edgesToString(p: PieceDefinition): string {
   return edges.join('+');
 }
 
-function edgesFromString(value: string | undefined): PieceDefinition['edgeBanding'] {
+export function edgesFromString(value: string | undefined): PieceDefinition['edgeBanding'] {
   const set = new Set((value ?? '').toLowerCase().split('+').map(s => s.trim()));
   return { top: set.has('top'), right: set.has('right'), bottom: set.has('bottom'), left: set.has('left') };
 }
