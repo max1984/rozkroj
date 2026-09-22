@@ -4,7 +4,7 @@ import type { LayoutResult, Project, PieceDefinition } from '../types';
 import { fromMm } from './units';
 import { totalBandingLengthMm, mapEdgeBandingForRotation } from './edgeBanding';
 
-function edgesLabel(p: PieceDefinition): string {
+export function edgesLabel(p: PieceDefinition): string {
   const letters = [
     p.edgeBanding.top ? 'T' : '',
     p.edgeBanding.right ? 'R' : '',
