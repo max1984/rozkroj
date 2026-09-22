@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore as useZustand } from 'zustand';
 import { useStore } from './store';
+import { isEditableElement } from './utils/dom';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { LayoutViewer } from './components/visualization/LayoutViewer';
@@ -16,7 +17,7 @@ export default function App() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !isEditableElement(e.target)) {
         e.preventDefault();
         if (e.shiftKey) redo();
         else undo();
