@@ -23,7 +23,7 @@ function defaultMaterial(): MaterialStock {
 
 /** Upgrades a project saved before multi-material support (single global sheet size) to the current shape. */
 export function migrateProject(raw: LegacyProject & Project): Project {
-  let project = raw;
+  let project: Project = raw;
 
   if (!raw.materials || raw.materials.length === 0) {
     const legacySize = raw.settings?.size ?? DEFAULT_SHEET_SIZE;
@@ -37,15 +37,14 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   }
 
   // Re-link standard sheet sizes so edits to STANDARD_SHEET_SIZES propagate.
-  project.materials = project.materials.map(m => {
+  const materials = project.materials.map(m => {
     const matchedSize = STANDARD_SHEET_SIZES.find(
       s => s.width === m.size.width && s.height === m.size.height && !m.size.custom
     );
     return matchedSize ? { ...m, size: matchedSize } : m;
   });
 
-  project.offcutStock = project.offcutStock ?? [];
-  project.pieces = project.pieces.map(p => ({ ...p, edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING }));
+  const pieces = project.pieces.map(p => ({ ...p, edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING }));
 
-  return project;
+  return { ...project, materials, pieces, offcutStock: project.offcutStock ?? [] };
 }
