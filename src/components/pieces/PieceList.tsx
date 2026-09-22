@@ -20,7 +20,9 @@ export function PieceList() {
       unit,
       pieces.length,
       materials,
-      (imported) => setPieces([...pieces, ...imported]),
+      // Read pieces fresh at completion time rather than closing over the
+      // render-time value, since CSV parsing finishes asynchronously.
+      (imported) => setPieces([...useStore.getState().pieces, ...imported]),
       (err) => alert(err)
     );
     e.target.value = '';
