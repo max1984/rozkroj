@@ -76,6 +76,28 @@ describe('OffcutStock', () => {
     expect(addOffcut).toHaveBeenCalledWith('m1', 150, 150);
   });
 
+  it('does not re-save a free rect that already matches a saved offcut', () => {
+    offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
+    layout = {
+      sheets: [sheet({ freeRects: [{ x: 0, y: 0, width: 300, height: 200 }, { x: 0, y: 0, width: 150, height: 150 }] })],
+      unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0,
+    };
+    render(<OffcutStock />);
+    fireEvent.click(screen.getByText('Save offcuts'));
+    expect(addOffcut).toHaveBeenCalledTimes(1);
+    expect(addOffcut).toHaveBeenCalledWith('m1', 150, 150);
+  });
+
+  it('hides "Save offcuts" once every leftover free rect has already been saved', () => {
+    offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
+    layout = {
+      sheets: [sheet({ freeRects: [{ x: 0, y: 0, width: 300, height: 200 }] })],
+      unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0,
+    };
+    render(<OffcutStock />);
+    expect(screen.queryByText('Save offcuts')).toBeNull();
+  });
+
   it('exposes an accessible name for the icon-only remove button', () => {
     offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
     render(<OffcutStock />);

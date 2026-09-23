@@ -15,6 +15,11 @@ export function OffcutStock() {
   const offcutsFromLayout = layout?.sheets.flatMap(sh =>
     sh.freeRects.map(r => ({ ...r, materialId: sh.materialId }))
   ) ?? [];
+  // Re-clicking "Save offcuts" without the layout changing would otherwise
+  // re-add the same physical scrap as new stock entries every time.
+  const newOffcutsFromLayout = offcutsFromLayout.filter(r =>
+    !offcutStock.some(o => o.materialId === r.materialId && o.width === r.width && o.height === r.height)
+  );
 
   const materialName = (id: string) => materials.find(m => m.id === id)?.name;
 
@@ -22,10 +27,10 @@ export function OffcutStock() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-ink">{t.offcutStockHeading}</h2>
-        {offcutsFromLayout.length > 0 && (
+        {newOffcutsFromLayout.length > 0 && (
           <button
             className="text-xs text-accent hover:underline flex items-center gap-1"
-            onClick={() => offcutsFromLayout.forEach(r => addOffcut(r.materialId, r.width, r.height))}
+            onClick={() => newOffcutsFromLayout.forEach(r => addOffcut(r.materialId, r.width, r.height))}
             title={t.saveOffcutsTitle}
           >
             <PackagePlus size={12} /> {t.saveOffcuts}
