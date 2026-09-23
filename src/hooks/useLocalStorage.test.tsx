@@ -71,6 +71,29 @@ describe('useSaveLoad.loadFromFile', () => {
     expect(loadProject).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
+
+  it('alerts when the file cannot be read', async () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const RealFileReader = window.FileReader;
+    class FailingFileReader {
+      onerror: (() => void) | null = null;
+      onload: (() => void) | null = null;
+      readAsText() {
+        setTimeout(() => this.onerror?.(), 0);
+      }
+    }
+    // @ts-expect-error -- minimal stub, only what loadFromFile touches
+    window.FileReader = FailingFileReader;
+    const { result } = renderHook(() => useSaveLoad());
+    const file = new File(['{}'], 'p.rozkroj.json', { type: 'application/json' });
+
+    result.current.loadFromFile(file);
+
+    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Could not read the file.'));
+    expect(loadProject).not.toHaveBeenCalled();
+    window.FileReader = RealFileReader;
+    alertSpy.mockRestore();
+  });
 });
 
 describe('useSaveLoad.save', () => {

@@ -22,6 +22,7 @@ export function useSaveLoad() {
         alert('Invalid project file.');
       }
     };
+    reader.onerror = () => alert('Could not read the file.');
     reader.readAsText(file);
   };
 
