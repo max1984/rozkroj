@@ -32,6 +32,7 @@ export const en: Translations = {
   defaultProjectName: 'My Project',
   newProjectDefaultName: 'New Project',
   defaultMaterialName: 'Chipboard 18mm',
+  duplicateSuffix: (name) => `${name} (copy)`,
 
   // Sidebar
   settingsHeading: 'Settings',

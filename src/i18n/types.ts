@@ -34,6 +34,7 @@ export interface Translations {
   defaultProjectName: string;
   newProjectDefaultName: string;
   defaultMaterialName: string;
+  duplicateSuffix: (name: string) => string;
 
   // Sidebar
   settingsHeading: string;

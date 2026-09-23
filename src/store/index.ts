@@ -265,7 +265,8 @@ export const useStore = create<AppState>()(
       },
       duplicateProject: () => {
         const project = get().exportProject();
-        const copy: Project = { ...project, id: nanoid(), name: `${project.name} (copy)`, createdAt: Date.now(), updatedAt: Date.now() };
+        const t = TRANSLATIONS[get().language] ?? TRANSLATIONS.en;
+        const copy: Project = { ...project, id: nanoid(), name: t.duplicateSuffix(project.name), createdAt: Date.now(), updatedAt: Date.now() };
         if (!saveProjectToLibrary(copy)) {
           alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).duplicateSaveFailed);
           return;

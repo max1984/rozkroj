@@ -42,6 +42,7 @@ export const pl: Translations = {
   defaultProjectName: 'Mój projekt',
   newProjectDefaultName: 'Nowy projekt',
   defaultMaterialName: 'Płyta wiórowa 18mm',
+  duplicateSuffix: (name) => `${name} (kopia)`,
 
   // Sidebar
   settingsHeading: 'Ustawienia',

@@ -32,6 +32,7 @@ export const de: Translations = {
   defaultProjectName: 'Mein Projekt',
   newProjectDefaultName: 'Neues Projekt',
   defaultMaterialName: 'Spanplatte 18mm',
+  duplicateSuffix: (name) => `${name} (Kopie)`,
 
   // Sidebar
   settingsHeading: 'Einstellungen',
