@@ -11,6 +11,7 @@ const setSelectedPieceId = vi.fn();
 const addPiece = vi.fn();
 const updatePiece = vi.fn();
 let selectedPieceId: string | null = null;
+let layout: { unplacedPieces: { definitionId: string; instanceIndex: number }[] } | undefined = undefined;
 const materials: MaterialStock[] = [
   { id: 'm1', name: 'Chipboard', color: '#4e79a7', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
   { id: 'm2', name: 'MDF', color: '#f28e2b', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
@@ -18,7 +19,7 @@ const materials: MaterialStock[] = [
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: Record<string, unknown>) => unknown) => selector({
-    removePiece, duplicatePiece, setHoveredPieceId, setSelectedPieceId, selectedPieceId, materials, addPiece, updatePiece,
+    removePiece, duplicatePiece, setHoveredPieceId, setSelectedPieceId, selectedPieceId, materials, addPiece, updatePiece, layout,
   }),
 }));
 
@@ -44,6 +45,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   selectedPieceId = null;
+  layout = undefined;
 });
 
 describe('PieceRow', () => {
@@ -108,6 +110,16 @@ describe('PieceRow', () => {
     expect(screen.queryByText(/grain/)).toBeNull();
     rerender(<PieceRow piece={piece({ grain: 'horizontal' })} />);
     expect(screen.getByText(/grain/)).toBeTruthy();
+  });
+
+  it('shows an unplaced-count badge only when the layout reports unplaced instances of this piece', () => {
+    layout = { unplacedPieces: [{ definitionId: 'other-piece', instanceIndex: 0 }] };
+    const { rerender } = render(<PieceRow piece={piece()} />);
+    expect(screen.queryByText(/unplaced/)).toBeNull();
+
+    layout = { unplacedPieces: [{ definitionId: 'p1', instanceIndex: 0 }, { definitionId: 'p1', instanceIndex: 1 }] };
+    rerender(<PieceRow piece={piece()} />);
+    expect(screen.getByText(/2 unplaced/)).toBeTruthy();
   });
 
   it('exposes accessible names for the icon-only edit, duplicate and delete buttons', () => {

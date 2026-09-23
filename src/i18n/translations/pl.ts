@@ -97,6 +97,8 @@ export const pl: Translations = {
   // PieceRow
   grainIndicator: 'usłojenie',
   edgeIndicator: 'krawędź',
+  pieceUnplacedCount: (count) =>
+    polishForm(count, `${count} nie zmieścił się`, `${count} nie zmieściły się`, `${count} nie zmieściło się`),
   editPieceTitle: 'Edytuj element',
   duplicatePieceTitle: 'Duplikuj element',
   deletePieceTitle: 'Usuń element',

@@ -19,6 +19,7 @@ export function PieceRow({ piece }: Props) {
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
   const selectedPieceId = useStore(s => s.selectedPieceId);
   const materials = useStore(s => s.materials);
+  const unplacedCount = useStore(s => s.layout?.unplacedPieces?.filter(u => u.definitionId === piece.id).length ?? 0);
   const { format } = useUnitDisplay();
   const [editing, setEditing] = useState(false);
   const material = materials.find(m => m.id === piece.materialId);
@@ -52,6 +53,7 @@ export function PieceRow({ piece }: Props) {
           {material && materials.length > 1 && <span className="ml-1 font-sans">· {material.name}</span>}
           {piece.grain !== 'none' && <span className="ml-1 font-sans text-warn">⟶ {t.grainIndicator}</span>}
           {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 font-sans text-accent">▭ {t.edgeIndicator}</span>}
+          {unplacedCount > 0 && <span className="ml-1 font-sans text-danger">⚠ {t.pieceUnplacedCount(unplacedCount)}</span>}
           {piece.priority && <span className="ml-1 font-sans text-warn">★</span>}
         </div>
       </div>

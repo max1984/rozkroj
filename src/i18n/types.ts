@@ -88,6 +88,7 @@ export interface Translations {
   // PieceRow
   grainIndicator: string;
   edgeIndicator: string;
+  pieceUnplacedCount: (count: number) => string;
   editPieceTitle: string;
   duplicatePieceTitle: string;
   deletePieceTitle: string;

@@ -86,6 +86,7 @@ export const de: Translations = {
   // PieceRow
   grainIndicator: 'Faser',
   edgeIndicator: 'Kante',
+  pieceUnplacedCount: (count) => `${count} nicht platziert`,
   editPieceTitle: 'Teil bearbeiten',
   duplicatePieceTitle: 'Teil duplizieren',
   deletePieceTitle: 'Teil löschen',
