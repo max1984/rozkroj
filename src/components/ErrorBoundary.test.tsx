@@ -3,6 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
 
+// The fallback UI reads the store directly (a class component can't use the
+// useTranslation() hook) — mock it so this test doesn't pull in the real
+// store's module-load bootstrap, which touches localStorage in a way Node's
+// built-in global (broken without --localstorage-file) conflicts with even
+// under the jsdom pragma.
+vi.mock('../store', () => ({
+  useStore: { getState: () => ({ language: undefined }) },
+}));
+
 function Bomb(): never {
   throw new Error('boom');
 }

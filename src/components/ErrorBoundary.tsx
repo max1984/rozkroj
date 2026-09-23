@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { useStore } from '../store';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -27,18 +29,20 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
+      // A class component can't call the useTranslation() hook, but reading
+      // the store directly is safe: if the store module hadn't loaded, this
+      // component (and the whole app) couldn't have mounted in the first
+      // place, so it's guaranteed to be available by the time render() runs.
+      const t = TRANSLATIONS[useStore.getState().language] ?? TRANSLATIONS.en;
       return (
         <div className="flex h-screen flex-col items-center justify-center gap-3 bg-bg p-6 text-center text-ink">
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
-          <p className="max-w-sm text-sm text-muted">
-            Rozkroj hit an unexpected error and can't continue. Your last saved project is still safe in the project
-            library — reloading will not lose it.
-          </p>
+          <h1 className="text-lg font-semibold">{t.somethingWentWrong}</h1>
+          <p className="max-w-sm text-sm text-muted">{t.errorDescription}</p>
           <button
             onClick={() => window.location.reload()}
             className="btn-accent px-4 py-2 text-sm"
           >
-            Reload
+            {t.reloadButton}
           </button>
         </div>
       );
