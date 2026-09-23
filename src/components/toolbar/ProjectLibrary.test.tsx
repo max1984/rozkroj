@@ -10,12 +10,13 @@ const loadProjectById = vi.fn();
 const deleteProjectById = vi.fn();
 const saveProject = vi.fn();
 let projectId = 'active-id';
+let hasUnsavedChanges = false;
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: {
-    projectId: string; newProject: typeof newProject; duplicateProject: typeof duplicateProject;
+    projectId: string; hasUnsavedChanges: boolean; newProject: typeof newProject; duplicateProject: typeof duplicateProject;
     loadProjectById: typeof loadProjectById; deleteProjectById: typeof deleteProjectById; saveProject: typeof saveProject;
-  }) => unknown) => selector({ projectId, newProject, duplicateProject, loadProjectById, deleteProjectById, saveProject }),
+  }) => unknown) => selector({ projectId, hasUnsavedChanges, newProject, duplicateProject, loadProjectById, deleteProjectById, saveProject }),
 }));
 
 let entries: LibraryEntry[] = [];
@@ -30,6 +31,7 @@ afterEach(() => {
   vi.clearAllMocks();
   entries = [];
   projectId = 'active-id';
+  hasUnsavedChanges = false;
 });
 
 describe('ProjectLibrary', () => {
@@ -85,6 +87,46 @@ describe('ProjectLibrary', () => {
     fireEvent.click(screen.getByTitle('Delete project'));
 
     expect(deleteProjectById).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('asks for confirmation before creating a new project when there are unsaved changes', () => {
+    hasUnsavedChanges = true;
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<ProjectLibrary />);
+    fireEvent.click(screen.getByTitle('Project library'));
+
+    fireEvent.click(screen.getByText('New'));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(newProject).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('asks for confirmation before loading a different project when there are unsaved changes', () => {
+    hasUnsavedChanges = true;
+    entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    render(<ProjectLibrary />);
+    fireEvent.click(screen.getByTitle('Project library'));
+
+    fireEvent.click(screen.getByText('Bathroom'));
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(loadProjectById).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('does not ask for confirmation when there are no unsaved changes', () => {
+    hasUnsavedChanges = false;
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    render(<ProjectLibrary />);
+    fireEvent.click(screen.getByTitle('Project library'));
+
+    fireEvent.click(screen.getByText('New'));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(newProject).toHaveBeenCalledTimes(1);
     confirmSpy.mockRestore();
   });
 

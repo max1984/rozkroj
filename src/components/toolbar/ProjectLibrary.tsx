@@ -8,6 +8,7 @@ export function ProjectLibrary() {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const projectId = useStore(s => s.projectId);
+  const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
   const newProject = useStore(s => s.newProject);
   const duplicateProject = useStore(s => s.duplicateProject);
   const loadProjectById = useStore(s => s.loadProjectById);
@@ -15,6 +16,11 @@ export function ProjectLibrary() {
   const saveProject = useStore(s => s.saveProject);
 
   const refresh = () => setEntries(listProjects());
+
+  // Switching or creating a project replaces in-memory state outright — with
+  // no autosave, that silently discards anything not yet saved.
+  const confirmDiscardUnsaved = () =>
+    !hasUnsavedChanges || confirm('You have unsaved changes that will be lost. Continue?');
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>
@@ -43,7 +49,10 @@ export function ProjectLibrary() {
               Save current
             </button>
             <button
-              onClick={() => { newProject(); refresh(); setOpen(false); }}
+              onClick={() => {
+                if (!confirmDiscardUnsaved()) return;
+                newProject(); refresh(); setOpen(false);
+              }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
               <Plus size={13} /> New
@@ -68,7 +77,10 @@ export function ProjectLibrary() {
                   className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 ${isActive ? 'border-accent bg-accent-soft' : 'border-line'}`}
                 >
                   <button
-                    onClick={() => { loadProjectById(entry.id); setOpen(false); }}
+                    onClick={() => {
+                      if (!confirmDiscardUnsaved()) return;
+                      loadProjectById(entry.id); setOpen(false);
+                    }}
                     className="flex-1 min-w-0 text-left"
                   >
                     <div className="text-sm font-medium truncate">{entry.name}{isActive && <span className="text-accent font-normal"> · current</span>}</div>
