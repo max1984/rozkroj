@@ -44,7 +44,15 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     return matchedSize ? { ...m, size: matchedSize } : m;
   });
 
-  const pieces = project.pieces.map(p => ({ ...p, edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING }));
+  // A piece referencing a material that no longer exists (corrupted or hand-edited
+  // save, or materials trimmed independently) would otherwise be silently dropped
+  // from every sheet by the optimizer, with no unplaced-piece warning to explain why.
+  const materialIds = new Set(materials.map(m => m.id));
+  const pieces = project.pieces.map(p => ({
+    ...p,
+    materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
+    edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
+  }));
 
   return { ...project, materials, pieces, offcutStock: project.offcutStock ?? [] };
 }

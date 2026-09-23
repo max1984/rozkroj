@@ -141,4 +141,28 @@ describe('migrateProject', () => {
     expect(result.materials[0].size).toEqual(customSize);
     expect(result.materials[0].size).not.toBe(standard);
   });
+
+  it('reassigns a piece whose materialId matches no material to the first material, instead of leaving it orphaned', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial({ id: 'm1' })],
+      pieces: [legacyPiece({ materialId: 'deleted-material-id' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].materialId).toBe('m1');
+  });
+
+  it('leaves a piece\'s materialId untouched when it matches an existing material', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial({ id: 'm1' }), currentMaterial({ id: 'm2', name: 'MDF' })],
+      pieces: [legacyPiece({ materialId: 'm2' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].materialId).toBe('m2');
+  });
 });
