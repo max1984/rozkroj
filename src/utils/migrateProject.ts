@@ -1,8 +1,10 @@
 import { nanoid } from 'nanoid';
 import type { MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_MATERIAL_NAME, DEFAULT_EDGE_BANDING } from '../constants/defaults';
+import { DEFAULT_EDGE_BANDING } from '../constants/defaults';
 import { getPieceColor } from './colors';
+import { getInitialLanguage } from './languagePreference';
+import { TRANSLATIONS } from '../i18n';
 
 interface LegacyProject {
   settings?: { size?: { label: string; width: number; height: number; custom?: boolean } };
@@ -12,9 +14,10 @@ interface LegacyProject {
 }
 
 function defaultMaterial(): MaterialStock {
+  const language = getInitialLanguage();
   return {
     id: nanoid(),
-    name: DEFAULT_MATERIAL_NAME,
+    name: (TRANSLATIONS[language] ?? TRANSLATIONS.en).defaultMaterialName,
     color: getPieceColor(0),
     size: DEFAULT_SHEET_SIZE,
     pricePerSheet: 0,

@@ -3,7 +3,6 @@ import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { STANDARD_SHEET_SIZES, DEFAULT_SHEET_SIZE } from '../../constants/sheetSizes';
-import { DEFAULT_MATERIAL_NAME } from '../../constants/defaults';
 import { toMm } from '../../utils/units';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { MaterialStock } from '../../types';
@@ -26,7 +25,7 @@ export function MaterialManager() {
         <label className="text-sm font-medium text-ink">{t.materialsHeading}</label>
         <button
           onClick={() => {
-            addMaterial({ name: `${DEFAULT_MATERIAL_NAME} (${materials.length + 1})`, size: DEFAULT_SHEET_SIZE, pricePerSheet: 0 });
+            addMaterial({ name: `${t.defaultMaterialName} (${materials.length + 1})`, size: DEFAULT_SHEET_SIZE, pricePerSheet: 0 });
           }}
           className="icon-btn !p-1"
           title={t.addMaterialTitle}

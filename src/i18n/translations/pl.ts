@@ -39,6 +39,9 @@ export const pl: Translations = {
   noSavedProjects: 'Brak zapisanych projektów. Kliknij „Zapisz bieżący", aby dodać ten projekt.',
   currentLabel: 'bieżący',
   deleteProjectTitle: 'Usuń projekt',
+  defaultProjectName: 'Mój projekt',
+  newProjectDefaultName: 'Nowy projekt',
+  defaultMaterialName: 'Płyta wiórowa 18mm',
 
   // Sidebar
   settingsHeading: 'Ustawienia',

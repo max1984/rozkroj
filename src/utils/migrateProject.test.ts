@@ -1,7 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { migrateProject } from './migrateProject';
-import { DEFAULT_EDGE_BANDING, DEFAULT_MATERIAL_NAME } from '../constants/defaults';
+import { DEFAULT_EDGE_BANDING } from '../constants/defaults';
 import { STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
+import { TRANSLATIONS } from '../i18n';
+
+// defaultMaterial() falls back to the OS locale via navigator.language when
+// nothing is stored, which would make this file's assertions depend on the
+// machine running the suite (e.g. 'pl-PL') without this stub.
+beforeEach(() => {
+  vi.stubGlobal('navigator', { language: 'en-US' });
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 import type { MaterialStock, PieceDefinition, Project } from '../types';
 
 function legacyPiece(overrides: Partial<PieceDefinition> = {}): PieceDefinition {
@@ -45,7 +56,7 @@ describe('migrateProject', () => {
     const result = migrateProject(raw);
 
     expect(result.materials).toHaveLength(1);
-    expect(result.materials[0].name).toBe(DEFAULT_MATERIAL_NAME);
+    expect(result.materials[0].name).toBe(TRANSLATIONS.en.defaultMaterialName);
     expect(result.materials[0].size).toEqual({ label: 'Legacy', width: 2000, height: 1000 });
     expect(result.pieces[0].materialId).toBe(result.materials[0].id);
   });

@@ -29,6 +29,9 @@ export const de: Translations = {
   noSavedProjects: 'Noch keine gespeicherten Projekte. Klicken Sie auf „Aktuelles speichern", um dieses hinzuzufügen.',
   currentLabel: 'aktuell',
   deleteProjectTitle: 'Projekt löschen',
+  defaultProjectName: 'Mein Projekt',
+  newProjectDefaultName: 'Neues Projekt',
+  defaultMaterialName: 'Spanplatte 18mm',
 
   // Sidebar
   settingsHeading: 'Einstellungen',

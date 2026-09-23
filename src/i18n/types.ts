@@ -31,6 +31,9 @@ export interface Translations {
   noSavedProjects: string;
   currentLabel: string;
   deleteProjectTitle: string;
+  defaultProjectName: string;
+  newProjectDefaultName: string;
+  defaultMaterialName: string;
 
   // Sidebar
   settingsHeading: string;

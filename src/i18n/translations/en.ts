@@ -29,6 +29,9 @@ export const en: Translations = {
   noSavedProjects: 'No saved projects yet. Click "Save current" to add this one.',
   currentLabel: 'current',
   deleteProjectTitle: 'Delete project',
+  defaultProjectName: 'My Project',
+  newProjectDefaultName: 'New Project',
+  defaultMaterialName: 'Chipboard 18mm',
 
   // Sidebar
   settingsHeading: 'Settings',

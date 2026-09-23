@@ -9,7 +9,7 @@ import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
 import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
 import { DEFAULT_SHEET_SIZE } from '../constants/sheetSizes';
-import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, DEFAULT_MATERIAL_NAME } from '../constants/defaults';
+import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM } from '../constants/defaults';
 import { getPieceColor } from '../utils/colors';
 import { runOptimizer } from '../algorithms/optimizer';
 import {
@@ -91,25 +91,25 @@ const DEFAULT_SETTINGS: CuttingSettings = {
   freshEdgeTrim: DEFAULT_FRESH_EDGE_TRIM,
 };
 
-function defaultMaterial(): MaterialStock {
+function defaultMaterial(language: Language): MaterialStock {
   return {
     id: nanoid(),
-    name: DEFAULT_MATERIAL_NAME,
+    name: (TRANSLATIONS[language] ?? TRANSLATIONS.en).defaultMaterialName,
     color: getPieceColor(0),
     size: DEFAULT_SHEET_SIZE,
     pricePerSheet: 0,
   };
 }
 
-function blankProject(name = 'My Project') {
+function blankProject(language: Language, name?: string) {
   return {
     projectId: nanoid(),
-    projectName: name,
+    projectName: name ?? (TRANSLATIONS[language] ?? TRANSLATIONS.en).defaultProjectName,
     projectCreatedAt: Date.now(),
     unit: getLastUnit(),
     algorithm: 'maxrects' as const,
     settings: DEFAULT_SETTINGS,
-    materials: [defaultMaterial()],
+    materials: [defaultMaterial(language)],
     pieces: [],
     offcutStock: [],
   };
@@ -118,7 +118,7 @@ function blankProject(name = 'My Project') {
 export const useStore = create<AppState>()(
   temporal(
     (set, get) => ({
-      ...blankProject(),
+      ...blankProject(getInitialLanguage()),
       layout: null,
       selectedPieceId: null,
       hoveredPieceId: null,
@@ -245,7 +245,8 @@ export const useStore = create<AppState>()(
       },
 
       newProject: () => {
-        set({ ...blankProject('New Project'), layout: null, selectedPieceId: null, hoveredPieceId: null });
+        const language = get().language;
+        set({ ...blankProject(language, TRANSLATIONS[language]?.newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
         useStore.temporal.getState().clear();
         set({ hasUnsavedChanges: false });
         get().recomputeLayout();

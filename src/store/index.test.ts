@@ -8,6 +8,11 @@ import type { useStore as UseStoreType } from './index';
 async function freshStore(): Promise<typeof UseStoreType> {
   vi.resetModules();
   vi.stubGlobal('localStorage', new MemoryStorage());
+  // getInitialLanguage() falls back to navigator.language when nothing is
+  // stored; without this stub these tests would pick up the OS locale of
+  // whatever machine runs them (e.g. 'pl-PL'), making default-language
+  // assertions pass or fail depending on where the suite runs.
+  vi.stubGlobal('navigator', { language: 'en-US' });
   const mod = await import('./index');
   return mod.useStore;
 }
