@@ -5,9 +5,11 @@ import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { STANDARD_SHEET_SIZES, DEFAULT_SHEET_SIZE } from '../../constants/sheetSizes';
 import { DEFAULT_MATERIAL_NAME } from '../../constants/defaults';
 import { toMm } from '../../utils/units';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { MaterialStock } from '../../types';
 
 export function MaterialManager() {
+  const { t } = useTranslation();
   const materials = useStore(s => s.materials);
   const pieces = useStore(s => s.pieces);
   const addMaterial = useStore(s => s.addMaterial);
@@ -21,14 +23,14 @@ export function MaterialManager() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-ink">Materials</label>
+        <label className="text-sm font-medium text-ink">{t.materialsHeading}</label>
         <button
           onClick={() => {
             addMaterial({ name: `${DEFAULT_MATERIAL_NAME} (${materials.length + 1})`, size: DEFAULT_SHEET_SIZE, pricePerSheet: 0 });
           }}
           className="icon-btn !p-1"
-          title="Add material"
-          aria-label="Add material"
+          title={t.addMaterialTitle}
+          aria-label={t.addMaterialTitle}
         >
           <Plus size={14} />
         </button>
@@ -64,6 +66,7 @@ function MaterialRow({
   removable: boolean;
 }) {
   const id = useId();
+  const { t } = useTranslation();
   const { unit, format, inputValue } = useUnitDisplay();
   const isCustom = material.size.custom;
 
@@ -85,7 +88,7 @@ function MaterialRow({
       {expanded && (
         <div className="px-2.5 pb-2.5 space-y-2 border-t border-line pt-2">
           <div>
-            <label htmlFor={`${id}-name`} className="block text-xs text-muted mb-1">Name</label>
+            <label htmlFor={`${id}-name`} className="block text-xs text-muted mb-1">{t.nameLabel}</label>
             <input
               id={`${id}-name`}
               type="text"
@@ -96,7 +99,7 @@ function MaterialRow({
           </div>
 
           <div>
-            <label htmlFor={`${id}-size`} className="block text-xs text-muted mb-1">Sheet size</label>
+            <label htmlFor={`${id}-size`} className="block text-xs text-muted mb-1">{t.sheetSizeLabel}</label>
             <select
               id={`${id}-size`}
               className="field"
@@ -113,7 +116,7 @@ function MaterialRow({
               {STANDARD_SHEET_SIZES.filter(s => !s.custom).map(s => (
                 <option key={`${s.width}x${s.height}`} value={`${s.width}x${s.height}`}>{s.label}</option>
               ))}
-              <option value="custom">Custom</option>
+              <option value="custom">{t.customOption}</option>
             </select>
           </div>
 
@@ -122,8 +125,8 @@ function MaterialRow({
               <input
                 type="number"
                 className="field"
-                placeholder={`Width (${unit})`}
-                aria-label={`Width (${unit})`}
+                placeholder={t.widthWithUnit(unit)}
+                aria-label={t.widthWithUnit(unit)}
                 defaultValue={inputValue(material.size.width)}
                 onBlur={e => {
                   const w = toMm(parseFloat(e.target.value), unit);
@@ -134,8 +137,8 @@ function MaterialRow({
               <input
                 type="number"
                 className="field"
-                placeholder={`Height (${unit})`}
-                aria-label={`Height (${unit})`}
+                placeholder={t.heightWithUnit(unit)}
+                aria-label={t.heightWithUnit(unit)}
                 defaultValue={inputValue(material.size.height)}
                 onBlur={e => {
                   const h = toMm(parseFloat(e.target.value), unit);
@@ -146,7 +149,7 @@ function MaterialRow({
           )}
 
           <div>
-            <label htmlFor={`${id}-price`} className="block text-xs text-muted mb-1">Price per sheet</label>
+            <label htmlFor={`${id}-price`} className="block text-xs text-muted mb-1">{t.pricePerSheetLabel}</label>
             <input
               id={`${id}-price`}
               type="number"
@@ -160,13 +163,13 @@ function MaterialRow({
           </div>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="text-xs text-muted">{count} piece{count !== 1 ? 's' : ''} using this material</span>
+            <span className="text-xs text-muted">{t.pieceCountUsingMaterial(count)}</span>
             {removable && (
               <button
                 onClick={onRemove}
                 className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
-                title="Remove material"
-                aria-label="Remove material"
+                title={t.removeMaterialTitle}
+                aria-label={t.removeMaterialTitle}
               >
                 <Trash2 size={13} />
               </button>

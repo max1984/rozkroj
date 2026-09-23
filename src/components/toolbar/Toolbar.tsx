@@ -4,6 +4,7 @@ import { useStore as useZustand } from 'zustand';
 import { useStore } from '../../store';
 import { exportCsv } from '../../utils/csv';
 import { useSaveLoad } from '../../hooks/useLocalStorage';
+import { useTranslation } from '../../hooks/useTranslation';
 import { ProjectLibrary } from './ProjectLibrary';
 
 function CutMark() {
@@ -16,6 +17,7 @@ function CutMark() {
 }
 
 export function Toolbar() {
+  const { t } = useTranslation();
   const projectName = useStore(s => s.projectName);
   const setProjectName = useStore(s => s.setProjectName);
   const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
@@ -45,7 +47,7 @@ export function Toolbar() {
       await generatePdf(layout, project, pdfAllOnOne);
       setShowPdfOpts(false);
     } catch {
-      alert('Failed to generate the PDF. If the app was just updated, try reloading the page.');
+      alert(t.pdfGenerationFailed);
     }
   };
 
@@ -58,14 +60,14 @@ export function Toolbar() {
           className="font-semibold text-ink bg-transparent border-none outline-none focus:ring-1 focus:ring-accent rounded-sm px-1 text-sm"
           value={projectName}
           onChange={e => setProjectName(e.target.value)}
-          title="Click to rename project"
-          aria-label="Project name"
+          title={t.renameProjectTitle}
+          aria-label={t.projectNameLabel}
         />
         {hasUnsavedChanges && (
           <span
             className="w-1.5 h-1.5 rounded-full bg-warn flex-shrink-0"
-            title="Unsaved changes"
-            aria-label="Unsaved changes"
+            title={t.unsavedChangesTitle}
+            aria-label={t.unsavedChangesTitle}
             role="status"
           />
         )}
@@ -77,8 +79,8 @@ export function Toolbar() {
           onClick={() => undo()}
           disabled={pastStates.length === 0}
           className="icon-btn"
-          title="Undo (⌘Z)"
-          aria-label="Undo"
+          title={t.undoTitle}
+          aria-label={t.undoLabel}
         >
           <Undo2 size={15} />
         </button>
@@ -86,8 +88,8 @@ export function Toolbar() {
           onClick={() => redo()}
           disabled={futureStates.length === 0}
           className="icon-btn"
-          title="Redo (⌘⇧Z)"
-          aria-label="Redo"
+          title={t.redoTitle}
+          aria-label={t.redoLabel}
         >
           <Redo2 size={15} />
         </button>
@@ -100,12 +102,12 @@ export function Toolbar() {
       <button
         onClick={save}
         className={`icon-btn ${hasUnsavedChanges ? 'text-warn' : ''}`}
-        title={hasUnsavedChanges ? 'Save project (unsaved changes)' : 'Save project'}
-        aria-label={hasUnsavedChanges ? 'Save project (unsaved changes)' : 'Save project'}
+        title={hasUnsavedChanges ? t.saveProjectUnsavedTitle : t.saveProjectTitle}
+        aria-label={hasUnsavedChanges ? t.saveProjectUnsavedTitle : t.saveProjectTitle}
       >
         <Save size={15} />
       </button>
-      <label className="icon-btn cursor-pointer" title="Import project file" aria-label="Import project file">
+      <label className="icon-btn cursor-pointer" title={t.importProjectFileTitle} aria-label={t.importProjectFileTitle}>
         <FolderOpen size={15} />
         <input
           type="file"
@@ -114,7 +116,7 @@ export function Toolbar() {
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFromFile(f); e.target.value = ''; }}
         />
       </label>
-      <button onClick={exportToFile} className="icon-btn" title="Export project file" aria-label="Export project file">
+      <button onClick={exportToFile} className="icon-btn" title={t.exportProjectFileTitle} aria-label={t.exportProjectFileTitle}>
         <Download size={15} />
       </button>
 
@@ -125,8 +127,8 @@ export function Toolbar() {
         onClick={() => exportCsv(pieces, materials, unit)}
         disabled={pieces.length === 0}
         className="icon-btn"
-        title="Export cut list as CSV"
-        aria-label="Export cut list as CSV"
+        title={t.exportCsvTitle}
+        aria-label={t.exportCsvTitle}
       >
         <FileDown size={15} />
       </button>
@@ -139,16 +141,16 @@ export function Toolbar() {
           aria-expanded={showPdfOpts}
           className="flex items-center gap-1 px-3 py-1 rounded-md bg-accent text-accent-ink text-xs font-semibold tracking-wide hover:brightness-105 disabled:opacity-40 transition"
         >
-          PDF
+          {t.pdfButton}
         </button>
         {showPdfOpts && (
           <div className="absolute right-0 top-9 z-10 bg-surface border border-line rounded-lg shadow-lg p-3 w-52 space-y-2">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
               <input type="checkbox" checked={pdfAllOnOne} onChange={e => setPdfAllOnOne(e.target.checked)} />
-              All sheets on one page
+              {t.allSheetsOnOnePage}
             </label>
             <button onClick={handlePdf} className="w-full rounded-md bg-accent text-accent-ink px-3 py-1.5 text-sm font-medium hover:brightness-105">
-              Download PDF
+              {t.downloadPdf}
             </button>
           </div>
         )}
@@ -157,7 +159,7 @@ export function Toolbar() {
       <div className="flex-1" />
 
       {/* Dark mode */}
-      <button onClick={toggleDarkMode} className="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+      <button onClick={toggleDarkMode} className="icon-btn" title={t.toggleThemeTitle} aria-label={t.toggleThemeTitle}>
         {darkMode ? <Sun size={15} /> : <Moon size={15} />}
       </button>
     </header>

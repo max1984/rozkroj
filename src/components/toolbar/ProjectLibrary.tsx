@@ -3,9 +3,10 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { FolderKanban, Plus, Copy, Trash2, X } from 'lucide-react';
 import { useStore } from '../../store';
 import { listProjects, type LibraryEntry } from '../../utils/projectLibrary';
-import { UNSAVED_CHANGES_CONFIRM_MESSAGE } from '../../constants/defaults';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function ProjectLibrary() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const projectId = useStore(s => s.projectId);
@@ -21,12 +22,12 @@ export function ProjectLibrary() {
   // Switching or creating a project replaces in-memory state outright — with
   // no autosave, that silently discards anything not yet saved.
   const confirmDiscardUnsaved = () =>
-    !hasUnsavedChanges || confirm(UNSAVED_CHANGES_CONFIRM_MESSAGE);
+    !hasUnsavedChanges || confirm(t.unsavedChangesConfirm);
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>
       <Dialog.Trigger asChild>
-        <button className="icon-btn" title="Project library" aria-label="Project library">
+        <button className="icon-btn" title={t.projectLibraryTitle} aria-label={t.projectLibraryTitle}>
           <FolderKanban size={15} />
         </button>
       </Dialog.Trigger>
@@ -34,7 +35,7 @@ export function ProjectLibrary() {
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[420px] max-h-[70vh] flex flex-col rounded-lg bg-surface border border-line shadow-xl">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-            <Dialog.Title className="text-sm font-semibold text-ink">Projects</Dialog.Title>
+            <Dialog.Title className="text-sm font-semibold text-ink">{t.projectsHeading}</Dialog.Title>
             <Dialog.Close asChild>
               <button className="p-1 rounded-md hover:bg-surface-2 text-muted">
                 <X size={15} />
@@ -47,7 +48,7 @@ export function ProjectLibrary() {
               onClick={() => { saveProject(); refresh(); }}
               className="flex-1 btn-accent px-2.5 py-1.5 text-xs"
             >
-              Save current
+              {t.saveCurrent}
             </button>
             <button
               onClick={() => {
@@ -56,19 +57,19 @@ export function ProjectLibrary() {
               }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
-              <Plus size={13} /> New
+              <Plus size={13} /> {t.newProject}
             </button>
             <button
               onClick={() => { duplicateProject(); refresh(); }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
-              <Copy size={13} /> Duplicate
+              <Copy size={13} /> {t.duplicateProject}
             </button>
           </div>
 
           <div className="overflow-y-auto flex-1 p-2 space-y-1">
             {entries.length === 0 && (
-              <p className="text-xs text-muted text-center py-6">No saved projects yet. Click "Save current" to add this one.</p>
+              <p className="text-xs text-muted text-center py-6">{t.noSavedProjects}</p>
             )}
             {entries.map(entry => {
               const isActive = entry.id === projectId;
@@ -84,18 +85,18 @@ export function ProjectLibrary() {
                     }}
                     className="flex-1 min-w-0 text-left"
                   >
-                    <div className="text-sm font-medium truncate">{entry.name}{isActive && <span className="text-accent font-normal"> · current</span>}</div>
+                    <div className="text-sm font-medium truncate">{entry.name}{isActive && <span className="text-accent font-normal"> · {t.currentLabel}</span>}</div>
                     <div className="text-xs font-mono text-muted">{new Date(entry.updatedAt).toLocaleString()}</div>
                   </button>
                   <button
                     onClick={() => {
-                      if (!confirm(`Delete "${entry.name}"? This cannot be undone.`)) return;
+                      if (!confirm(t.deleteProjectConfirm(entry.name))) return;
                       deleteProjectById(entry.id);
                       refresh();
                     }}
                     className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
-                    title="Delete project"
-                    aria-label="Delete project"
+                    title={t.deleteProjectTitle}
+                    aria-label={t.deleteProjectTitle}
                   >
                     <Trash2 size={13} />
                   </button>

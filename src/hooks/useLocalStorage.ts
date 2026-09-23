@@ -1,8 +1,9 @@
 import { useStore } from '../store';
 import { migrateProject } from '../utils/migrateProject';
-import { UNSAVED_CHANGES_CONFIRM_MESSAGE } from '../constants/defaults';
+import { useTranslation } from './useTranslation';
 
 export function useSaveLoad() {
+  const { t } = useTranslation();
   const saveProject = useStore(s => s.saveProject);
   const loadProject = useStore(s => s.loadProject);
   const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
@@ -12,17 +13,17 @@ export function useSaveLoad() {
   };
 
   const loadFromFile = (file: File) => {
-    if (hasUnsavedChanges && !confirm(UNSAVED_CHANGES_CONFIRM_MESSAGE)) return;
+    if (hasUnsavedChanges && !confirm(t.unsavedChangesConfirm)) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const project = migrateProject(JSON.parse(e.target?.result as string));
         loadProject(project);
       } catch {
-        alert('Invalid project file.');
+        alert(t.invalidProjectFile);
       }
     };
-    reader.onerror = () => alert('Could not read the file.');
+    reader.onerror = () => alert(t.couldNotReadFile);
     reader.readAsText(file);
   };
 

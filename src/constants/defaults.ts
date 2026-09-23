@@ -7,4 +7,3 @@ export const LAST_UNIT_KEY = 'rozkroj_last_unit';
 export const LANGUAGE_KEY = 'rozkroj_language';
 export const DEFAULT_MATERIAL_NAME = 'Chipboard 18mm';
 export const DEFAULT_EDGE_BANDING = { top: false, right: false, bottom: false, left: false };
-export const UNSAVED_CHANGES_CONFIRM_MESSAGE = 'You have unsaved changes that will be lost. Continue?';

@@ -1,17 +1,21 @@
 import { useStore } from '../../store';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function AlgorithmPicker() {
+  const { t } = useTranslation();
   const algorithm = useStore(s => s.algorithm);
   const setAlgorithm = useStore(s => s.setAlgorithm);
 
+  const options = [
+    { value: 'maxrects', label: t.optimalLabel, desc: t.optimalDesc },
+    { value: 'easycut', label: t.easyCutLabel, desc: t.easyCutDesc },
+  ] as const;
+
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-ink">Cut Mode</label>
+      <label className="block text-sm font-medium text-ink">{t.cutModeLabel}</label>
       <div className="flex gap-2">
-        {([
-          { value: 'maxrects', label: 'Optimal', desc: 'Best material usage' },
-          { value: 'easycut', label: 'Easy Cut', desc: 'Sequential saw cuts' },
-        ] as const).map(opt => (
+        {options.map(opt => (
           <button
             key={opt.value}
             onClick={() => setAlgorithm(opt.value)}

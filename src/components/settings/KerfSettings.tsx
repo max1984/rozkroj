@@ -1,9 +1,11 @@
 import { useId } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function KerfSettings() {
   const id = useId();
+  const { t } = useTranslation();
   const settings = useStore(s => s.settings);
   const setSettings = useStore(s => s.setSettings);
   const { format, inputValue, toMm } = useUnitDisplay();
@@ -11,10 +13,10 @@ export function KerfSettings() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-ink">Fresh Edge</label>
+        <label className="text-sm font-medium text-ink">{t.freshEdgeLabel}</label>
         <button
           onClick={() => setSettings({ freshEdge: !settings.freshEdge })}
-          aria-label="Fresh Edge"
+          aria-label={t.freshEdgeLabel}
           aria-pressed={settings.freshEdge}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.freshEdge ? 'bg-accent' : 'bg-surface-2'}`}
         >
@@ -25,7 +27,7 @@ export function KerfSettings() {
       {settings.freshEdge && (
         <div>
           <label htmlFor={`${id}-trim`} className="block text-xs text-muted mb-1">
-            Trim per side (<span className="font-mono">{format(settings.freshEdgeTrim)}</span>)
+            {t.trimPerSideLabel} (<span className="font-mono">{format(settings.freshEdgeTrim)}</span>)
           </label>
           <input
             id={`${id}-trim`}
@@ -43,7 +45,7 @@ export function KerfSettings() {
 
       <div>
         <label htmlFor={`${id}-kerf`} className="block text-sm font-medium text-ink mb-1">
-          Saw Kerf (<span className="font-mono">{format(settings.sawKerf)}</span>)
+          {t.sawKerfLabel} (<span className="font-mono">{format(settings.sawKerf)}</span>)
         </label>
         <input
           id={`${id}-kerf`}
