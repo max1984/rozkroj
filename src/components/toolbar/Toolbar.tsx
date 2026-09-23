@@ -18,6 +18,7 @@ function CutMark() {
 export function Toolbar() {
   const projectName = useStore(s => s.projectName);
   const setProjectName = useStore(s => s.setProjectName);
+  const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
   const darkMode = useStore(s => s.darkMode);
   const toggleDarkMode = useStore(s => s.toggleDarkMode);
   const pieces = useStore(s => s.pieces);
@@ -53,6 +54,14 @@ export function Toolbar() {
           title="Click to rename project"
           aria-label="Project name"
         />
+        {hasUnsavedChanges && (
+          <span
+            className="w-1.5 h-1.5 rounded-full bg-warn flex-shrink-0"
+            title="Unsaved changes"
+            aria-label="Unsaved changes"
+            role="status"
+          />
+        )}
       </div>
 
       {/* Undo/Redo */}
@@ -81,7 +90,12 @@ export function Toolbar() {
 
       {/* Save / Load */}
       <ProjectLibrary />
-      <button onClick={save} className="icon-btn" title="Save project" aria-label="Save project">
+      <button
+        onClick={save}
+        className={`icon-btn ${hasUnsavedChanges ? 'text-warn' : ''}`}
+        title={hasUnsavedChanges ? 'Save project (unsaved changes)' : 'Save project'}
+        aria-label={hasUnsavedChanges ? 'Save project (unsaved changes)' : 'Save project'}
+      >
         <Save size={15} />
       </button>
       <label className="icon-btn cursor-pointer" title="Import project file" aria-label="Import project file">

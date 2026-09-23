@@ -25,7 +25,7 @@ const H = vi.hoisted(() => ({
   redo: vi.fn(),
   exportProject: vi.fn(),
   mutable: {
-    projectName: 'My Project', darkMode: false,
+    projectName: 'My Project', darkMode: false, hasUnsavedChanges: false,
     pieces: [] as PieceDefinition[], layout: null as LayoutResult | null,
     materials: [] as MaterialStock[],
   },
@@ -36,6 +36,7 @@ function state() {
   return {
     projectName: H.mutable.projectName, setProjectName: H.setProjectName,
     darkMode: H.mutable.darkMode, toggleDarkMode: H.toggleDarkMode,
+    hasUnsavedChanges: H.mutable.hasUnsavedChanges,
     pieces: H.mutable.pieces, unit: 'mm' as const, materials: H.mutable.materials,
     layout: H.mutable.layout, exportProject: H.exportProject,
   };
@@ -80,6 +81,7 @@ afterEach(() => {
   vi.clearAllMocks();
   H.mutable.projectName = 'My Project';
   H.mutable.darkMode = false;
+  H.mutable.hasUnsavedChanges = false;
   H.mutable.pieces = [];
   H.mutable.layout = null;
   temporalStore.setState({ pastStates: [], futureStates: [] });
@@ -172,5 +174,16 @@ describe('Toolbar', () => {
     render(<Toolbar />);
     fireEvent.click(screen.getByTitle('Toggle theme'));
     expect(H.toggleDarkMode).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an unsaved-changes indicator only when there are unsaved changes', () => {
+    const { rerender } = render(<Toolbar />);
+    expect(screen.queryByTitle('Unsaved changes')).toBeNull();
+    expect(screen.getByTitle('Save project')).toBeTruthy();
+
+    H.mutable.hasUnsavedChanges = true;
+    rerender(<Toolbar />);
+    expect(screen.getByTitle('Unsaved changes')).toBeTruthy();
+    expect(screen.getByTitle('Save project (unsaved changes)')).toBeTruthy();
   });
 });
