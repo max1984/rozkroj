@@ -269,6 +269,9 @@ export const useStore = create<AppState>()(
       // with new references when they actually change, so a shallow compare
       // is enough to skip no-op pushes.
       equality: shallow,
+      // Caps memory growth over a long editing session; oldest entries drop
+      // off the front once exceeded.
+      limit: 100,
     }
   )
 );

@@ -42,6 +42,20 @@ describe('store: undo history noise', () => {
     // partialized, so it must not push a second, spurious entry.
     expect(useStore.temporal.getState().pastStates).toHaveLength(1);
   });
+
+  it('caps history at 100 entries, dropping the oldest first', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    for (let i = 0; i < 105; i++) {
+      useStore.getState().addPiece({
+        name: `Piece ${i}`, materialId, width: 100, height: 100, quantity: 1,
+        grain: 'none', rotationAllowed: true, priority: false,
+        edgeBanding: { top: false, right: false, bottom: false, left: false },
+      });
+    }
+
+    expect(useStore.temporal.getState().pastStates).toHaveLength(100);
+  });
 });
 
 describe('store: pieces', () => {
