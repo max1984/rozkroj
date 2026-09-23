@@ -5,3 +5,4 @@ export const OFFCUT_STOCK_KEY = 'rozkroj_offcuts';
 export const DARK_MODE_KEY = 'rozkroj_dark_mode';
 export const DEFAULT_MATERIAL_NAME = 'Chipboard 18mm';
 export const DEFAULT_EDGE_BANDING = { top: false, right: false, bottom: false, left: false };
+export const UNSAVED_CHANGES_CONFIRM_MESSAGE = 'You have unsaved changes that will be lost. Continue?';

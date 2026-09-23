@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { FolderKanban, Plus, Copy, Trash2, X } from 'lucide-react';
 import { useStore } from '../../store';
 import { listProjects, type LibraryEntry } from '../../utils/projectLibrary';
+import { UNSAVED_CHANGES_CONFIRM_MESSAGE } from '../../constants/defaults';
 
 export function ProjectLibrary() {
   const [open, setOpen] = useState(false);
@@ -20,7 +21,7 @@ export function ProjectLibrary() {
   // Switching or creating a project replaces in-memory state outright — with
   // no autosave, that silently discards anything not yet saved.
   const confirmDiscardUnsaved = () =>
-    !hasUnsavedChanges || confirm('You have unsaved changes that will be lost. Continue?');
+    !hasUnsavedChanges || confirm(UNSAVED_CHANGES_CONFIRM_MESSAGE);
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>

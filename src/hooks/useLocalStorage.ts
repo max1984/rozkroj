@@ -1,15 +1,18 @@
 import { useStore } from '../store';
 import { migrateProject } from '../utils/migrateProject';
+import { UNSAVED_CHANGES_CONFIRM_MESSAGE } from '../constants/defaults';
 
 export function useSaveLoad() {
   const saveProject = useStore(s => s.saveProject);
   const loadProject = useStore(s => s.loadProject);
+  const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
 
   const save = () => {
     saveProject();
   };
 
   const loadFromFile = (file: File) => {
+    if (hasUnsavedChanges && !confirm(UNSAVED_CHANGES_CONFIRM_MESSAGE)) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
