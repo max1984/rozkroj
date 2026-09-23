@@ -71,6 +71,7 @@ function MaterialRow({
     <div className="card overflow-hidden">
       <button
         onClick={onToggle}
+        aria-expanded={expanded}
         className="w-full flex items-center gap-2 px-2.5 py-2 text-left"
       >
         <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: material.color }} />

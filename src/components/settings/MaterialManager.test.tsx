@@ -50,6 +50,15 @@ describe('MaterialManager', () => {
     expect(screen.getByPlaceholderText('Width (mm)')).toBeTruthy();
   });
 
+  it('reflects the expanded state via aria-expanded, toggling on click', () => {
+    materials = [material()];
+    const { container } = render(<MaterialManager />);
+    const toggleBtn = container.querySelector('button[aria-expanded]')!;
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.click(toggleBtn);
+    expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
+  });
+
   it('updates a custom width on blur with a valid value', () => {
     materials = [material()];
     render(<MaterialManager />);

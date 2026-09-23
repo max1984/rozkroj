@@ -156,7 +156,10 @@ describe('Toolbar', () => {
     H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
     H.exportProject.mockImplementation(exportedProject);
     render(<Toolbar />);
-    fireEvent.click(screen.getByText('PDF'));
+    const pdfBtn = screen.getByText('PDF').closest('button')!;
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(pdfBtn);
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByText('Download PDF')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Download PDF'));

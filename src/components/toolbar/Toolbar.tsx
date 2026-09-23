@@ -115,6 +115,7 @@ export function Toolbar() {
         <button
           onClick={() => setShowPdfOpts(v => !v)}
           disabled={!layout || layout.sheets.length === 0}
+          aria-expanded={showPdfOpts}
           className="flex items-center gap-1 px-3 py-1 rounded-md bg-accent text-accent-ink text-xs font-semibold tracking-wide hover:brightness-105 disabled:opacity-40 transition"
         >
           PDF
