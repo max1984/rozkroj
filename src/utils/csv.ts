@@ -4,6 +4,17 @@ import { toMm } from './units';
 import { getPieceColor } from './colors';
 import { nanoid } from 'nanoid';
 
+/**
+ * Neutralizes CSV/formula injection: spreadsheet apps (Excel, Sheets) treat a
+ * cell starting with =, +, -, @, tab, or CR as a formula, which lets a
+ * crafted piece/material name (e.g. from a shared project file) run
+ * arbitrary commands when the exported CSV is later opened by someone else.
+ * Prefixing with a single quote forces it to be read as literal text.
+ */
+export function sanitizeCsvField(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
 export function edgesToString(p: PieceDefinition): string {
   const edges: string[] = [];
   if (p.edgeBanding.top) edges.push('top');
@@ -37,8 +48,8 @@ export function detectUnitFromHeaders(fields: string[] | undefined, fallback: 'm
 export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[], unit: 'mm' | 'inch'): void {
   const materialMap = new Map(materials.map(m => [m.id, m.name]));
   const rows = pieces.map(p => ({
-    Name: p.name,
-    Material: materialMap.get(p.materialId) ?? '',
+    Name: sanitizeCsvField(p.name),
+    Material: sanitizeCsvField(materialMap.get(p.materialId) ?? ''),
     [`Width (${unit})`]: unit === 'inch' ? (p.width / 25.4).toFixed(4) : p.width,
     [`Height (${unit})`]: unit === 'inch' ? (p.height / 25.4).toFixed(4) : p.height,
     Quantity: p.quantity,

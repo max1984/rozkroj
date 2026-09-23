@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectUnitFromHeaders, edgesFromString, edgesToString } from './csv';
+import { detectUnitFromHeaders, edgesFromString, edgesToString, sanitizeCsvField } from './csv';
 import type { PieceDefinition } from '../types';
 
 function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
@@ -69,5 +69,30 @@ describe('edgesFromString', () => {
   it('round-trips through edgesToString', () => {
     const banding = { top: true, right: false, bottom: true, left: false };
     expect(edgesFromString(edgesToString(piece(banding)))).toEqual(banding);
+  });
+});
+
+describe('sanitizeCsvField', () => {
+  it('leaves an ordinary name untouched', () => {
+    expect(sanitizeCsvField('Left Side Panel')).toBe('Left Side Panel');
+  });
+
+  it('prefixes a value starting with = to neutralize spreadsheet formula execution', () => {
+    expect(sanitizeCsvField('=cmd|\'/c calc\'!A1')).toBe('\'=cmd|\'/c calc\'!A1');
+  });
+
+  it('prefixes values starting with +, -, or @', () => {
+    expect(sanitizeCsvField('+1234567890')).toBe("'+1234567890");
+    expect(sanitizeCsvField('-1')).toBe("'-1");
+    expect(sanitizeCsvField('@SUM(A1)')).toBe("'@SUM(A1)");
+  });
+
+  it('does not touch a name that merely contains one of those characters mid-string', () => {
+    expect(sanitizeCsvField('Shelf - Left')).toBe('Shelf - Left');
+    expect(sanitizeCsvField('A+B panel')).toBe('A+B panel');
+  });
+
+  it('leaves an empty string untouched', () => {
+    expect(sanitizeCsvField('')).toBe('');
   });
 });
