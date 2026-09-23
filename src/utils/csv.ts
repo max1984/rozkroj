@@ -73,7 +73,7 @@ export function importCsv(
   unit: 'mm' | 'inch',
   existingCount: number,
   materials: MaterialStock[],
-  onDone: (pieces: PieceDefinition[]) => void,
+  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number) => void,
   onError: (msg: string) => void
 ): void {
   const defaultMaterialId = materials[0]?.id ?? '';
@@ -85,11 +85,19 @@ export function importCsv(
     complete: (result) => {
       try {
         const csvUnit = detectUnitFromHeaders(result.meta.fields, unit);
+        let unmatchedMaterialCount = 0;
         const pieces: PieceDefinition[] = (result.data as Record<string, string>[]).map((row, i) => {
           const name = row['Name'] || `Piece ${existingCount + i + 1}`;
           const widthRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('width')) ?? '0');
           const heightRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('height')) ?? '0');
-          const materialId = byName.get((row['Material'] || '').toLowerCase()) ?? defaultMaterialId;
+          const materialCell = row['Material'] || '';
+          const matchedId = byName.get(materialCell.toLowerCase());
+          // A non-empty Material cell that matches nothing (typo, or a name
+          // from a different project) would otherwise silently land on
+          // whatever material happens to be first, with no indication to
+          // the user that the assignment didn't actually come from the file.
+          if (materialCell && !matchedId) unmatchedMaterialCount++;
+          const materialId = matchedId ?? defaultMaterialId;
           return {
             id: nanoid(),
             name,
@@ -104,7 +112,7 @@ export function importCsv(
             color: getPieceColor(existingCount + i),
           };
         });
-        onDone(pieces);
+        onDone(pieces, unmatchedMaterialCount);
       } catch {
         onError('Failed to parse CSV. Check column names.');
       }

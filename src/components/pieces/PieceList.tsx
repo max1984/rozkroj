@@ -22,7 +22,12 @@ export function PieceList() {
       materials,
       // Read pieces fresh at completion time rather than closing over the
       // render-time value, since CSV parsing finishes asynchronously.
-      (imported) => setPieces([...useStore.getState().pieces, ...imported]),
+      (imported, unmatchedMaterialCount) => {
+        setPieces([...useStore.getState().pieces, ...imported]);
+        if (unmatchedMaterialCount > 0) {
+          alert(`${unmatchedMaterialCount} piece${unmatchedMaterialCount !== 1 ? 's' : ''} had a Material that didn't match any existing material and ${unmatchedMaterialCount !== 1 ? 'were' : 'was'} assigned to the default instead.`);
+        }
+      },
       (err) => alert(err)
     );
     e.target.value = '';

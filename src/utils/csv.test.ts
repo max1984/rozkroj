@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { detectUnitFromHeaders, edgesFromString, edgesToString, sanitizeCsvField } from './csv';
-import type { PieceDefinition } from '../types';
+// @vitest-environment jsdom
+import { describe, expect, it, vi } from 'vitest';
+import { detectUnitFromHeaders, edgesFromString, edgesToString, importCsv, sanitizeCsvField } from './csv';
+import type { MaterialStock, PieceDefinition } from '../types';
 
 function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
   return {
@@ -94,5 +95,49 @@ describe('sanitizeCsvField', () => {
 
   it('leaves an empty string untouched', () => {
     expect(sanitizeCsvField('')).toBe('');
+  });
+});
+
+describe('importCsv', () => {
+  const materials: MaterialStock[] = [
+    { id: 'm1', name: 'Chipboard', color: '#000', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
+  ];
+
+  it('counts rows whose Material matches nothing and assigns them to the default material', async () => {
+    const csv = 'Name,Material,Width (mm),Height (mm),Quantity\nShelf,Chipboard,600,400,1\nDoor,Unknown Wood,500,300,1\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    const [pieces, unmatchedMaterialCount] = onDone.mock.calls[0];
+    expect(unmatchedMaterialCount).toBe(1);
+    expect(pieces).toHaveLength(2);
+    expect(pieces[0].materialId).toBe('m1');
+    expect(pieces[1].materialId).toBe('m1'); // fell back to the only/default material
+  });
+
+  it('does not count a blank Material cell as unmatched', async () => {
+    const csv = 'Name,Width (mm),Height (mm),Quantity\nShelf,600,400,1\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(onDone.mock.calls[0][1]).toBe(0);
+  });
+
+  it('is case-insensitive when matching Material names', async () => {
+    const csv = 'Name,Material,Width (mm),Height (mm),Quantity\nShelf,CHIPBOARD,600,400,1\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(onDone.mock.calls[0][1]).toBe(0);
+    expect(onDone.mock.calls[0][0][0].materialId).toBe('m1');
   });
 });
