@@ -3,7 +3,6 @@ import { Undo2, Redo2, Save, FolderOpen, Download, FileDown, Sun, Moon } from 'l
 import { useStore as useZustand } from 'zustand';
 import { useStore } from '../../store';
 import { exportCsv } from '../../utils/csv';
-import { generatePdf } from '../../utils/pdf';
 import { useSaveLoad } from '../../hooks/useLocalStorage';
 import { ProjectLibrary } from './ProjectLibrary';
 
@@ -33,6 +32,10 @@ export function Toolbar() {
 
   const handlePdf = async () => {
     if (!layout) return;
+    // jsPDF + autotable are a heavy dependency only needed once someone
+    // actually exports a PDF, so they're loaded on demand instead of
+    // bloating the initial bundle every visitor downloads.
+    const { generatePdf } = await import('../../utils/pdf');
     const project = useStore.getState().exportProject();
     await generatePdf(layout, project, pdfAllOnOne);
     setShowPdfOpts(false);
