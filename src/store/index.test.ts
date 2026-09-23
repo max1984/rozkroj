@@ -171,6 +171,24 @@ describe('store: settings', () => {
 
     expect(mod.useStore.getState().unit).toBe('inch');
   });
+
+  it('setLanguage updates the language and persists the choice', async () => {
+    const useStore = await freshStore();
+    useStore.getState().setLanguage('pl');
+    expect(useStore.getState().language).toBe('pl');
+    expect(localStorage.getItem('rozkroj_language')).toBe('pl');
+  });
+
+  it('starts a fresh session in the last language the user chose', async () => {
+    vi.resetModules();
+    const storage = new MemoryStorage();
+    storage.setItem('rozkroj_language', 'de');
+    vi.stubGlobal('localStorage', storage);
+
+    const mod = await import('./index');
+
+    expect(mod.useStore.getState().language).toBe('de');
+  });
 });
 
 describe('store: hasUnsavedChanges', () => {
