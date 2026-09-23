@@ -127,4 +127,12 @@ describe('MaterialManager', () => {
     render(<MaterialManager />);
     expect(screen.getByText('5 pieces using this material')).toBeTruthy();
   });
+
+  it('associates the name, sheet size and price fields with their labels', () => {
+    materials = [material()];
+    render(<MaterialManager />);
+    expect(screen.getByLabelText('Name')).toBeTruthy();
+    expect(screen.getByLabelText('Sheet size')).toBeTruthy();
+    expect(screen.getByLabelText('Price per sheet')).toBeTruthy();
+  });
 });

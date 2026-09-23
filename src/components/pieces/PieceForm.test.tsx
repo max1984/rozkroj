@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { PieceForm } from './PieceForm';
 import type { MaterialStock } from '../../types';
 
@@ -94,5 +94,14 @@ describe('PieceForm', () => {
     expect(updatePiece.mock.calls[0][0]).toBe('p1');
     expect(updatePiece.mock.calls[0][1]).toMatchObject({ width: 700 });
     expect(addPiece).not.toHaveBeenCalled();
+  });
+
+  it('associates each field with its visible label for screen readers', () => {
+    render(<PieceForm onClose={vi.fn()} />);
+    expect(screen.getByLabelText('Name (optional)')).toBeTruthy();
+    expect(screen.getByLabelText('Width (mm)')).toBeTruthy();
+    expect(screen.getByLabelText('Height (mm)')).toBeTruthy();
+    expect(screen.getByLabelText('Qty')).toBeTruthy();
+    expect(screen.getByLabelText('Grain Direction')).toBeTruthy();
   });
 });

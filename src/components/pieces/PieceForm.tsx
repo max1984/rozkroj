@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export function PieceForm({ editing, onClose }: Props) {
+  const formId = useId();
   const addPiece = useStore(s => s.addPiece);
   const updatePiece = useStore(s => s.updatePiece);
   const materials = useStore(s => s.materials);
@@ -45,8 +46,9 @@ export function PieceForm({ editing, onClose }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3 p-4">
       <div>
-        <label className="block text-xs text-muted mb-1">Name (optional)</label>
+        <label htmlFor={`${formId}-name`} className="block text-xs text-muted mb-1">Name (optional)</label>
         <input
+          id={`${formId}-name`}
           type="text"
           className="field"
           placeholder="e.g. Left Side"
@@ -57,8 +59,9 @@ export function PieceForm({ editing, onClose }: Props) {
 
       {materials.length > 1 && (
         <div>
-          <label className="block text-xs text-muted mb-1">Material</label>
+          <label htmlFor={`${formId}-material`} className="block text-xs text-muted mb-1">Material</label>
           <select
+            id={`${formId}-material`}
             className="field"
             value={materialId}
             onChange={e => setMaterialId(e.target.value)}
@@ -72,8 +75,9 @@ export function PieceForm({ editing, onClose }: Props) {
 
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="block text-xs text-muted mb-1">Width ({unit})</label>
+          <label htmlFor={`${formId}-width`} className="block text-xs text-muted mb-1">Width ({unit})</label>
           <input
+            id={`${formId}-width`}
             required
             type="number"
             min="1"
@@ -84,8 +88,9 @@ export function PieceForm({ editing, onClose }: Props) {
           />
         </div>
         <div className="flex-1">
-          <label className="block text-xs text-muted mb-1">Height ({unit})</label>
+          <label htmlFor={`${formId}-height`} className="block text-xs text-muted mb-1">Height ({unit})</label>
           <input
+            id={`${formId}-height`}
             required
             type="number"
             min="1"
@@ -96,8 +101,9 @@ export function PieceForm({ editing, onClose }: Props) {
           />
         </div>
         <div className="w-20">
-          <label className="block text-xs text-muted mb-1">Qty</label>
+          <label htmlFor={`${formId}-qty`} className="block text-xs text-muted mb-1">Qty</label>
           <input
+            id={`${formId}-qty`}
             required
             type="number"
             min="1"
@@ -109,8 +115,9 @@ export function PieceForm({ editing, onClose }: Props) {
       </div>
 
       <div>
-        <label className="block text-xs text-muted mb-1">Grain Direction</label>
+        <label htmlFor={`${formId}-grain`} className="block text-xs text-muted mb-1">Grain Direction</label>
         <select
+          id={`${formId}-grain`}
           className="field"
           value={grain}
           onChange={e => setGrain(e.target.value as GrainDirection)}

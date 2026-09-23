@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
@@ -63,6 +63,7 @@ function MaterialRow({
   onRemove: () => void;
   removable: boolean;
 }) {
+  const id = useId();
   const { unit, format, inputValue } = useUnitDisplay();
   const isCustom = material.size.custom;
 
@@ -83,8 +84,9 @@ function MaterialRow({
       {expanded && (
         <div className="px-2.5 pb-2.5 space-y-2 border-t border-line pt-2">
           <div>
-            <label className="block text-xs text-muted mb-1">Name</label>
+            <label htmlFor={`${id}-name`} className="block text-xs text-muted mb-1">Name</label>
             <input
+              id={`${id}-name`}
               type="text"
               className="field"
               value={material.name}
@@ -93,8 +95,9 @@ function MaterialRow({
           </div>
 
           <div>
-            <label className="block text-xs text-muted mb-1">Sheet size</label>
+            <label htmlFor={`${id}-size`} className="block text-xs text-muted mb-1">Sheet size</label>
             <select
+              id={`${id}-size`}
               className="field"
               value={isCustom ? 'custom' : `${material.size.width}x${material.size.height}`}
               onChange={e => {
@@ -119,6 +122,7 @@ function MaterialRow({
                 type="number"
                 className="field"
                 placeholder={`Width (${unit})`}
+                aria-label={`Width (${unit})`}
                 defaultValue={inputValue(material.size.width)}
                 onBlur={e => {
                   const w = toMm(parseFloat(e.target.value), unit);
@@ -130,6 +134,7 @@ function MaterialRow({
                 type="number"
                 className="field"
                 placeholder={`Height (${unit})`}
+                aria-label={`Height (${unit})`}
                 defaultValue={inputValue(material.size.height)}
                 onBlur={e => {
                   const h = toMm(parseFloat(e.target.value), unit);
@@ -140,8 +145,9 @@ function MaterialRow({
           )}
 
           <div>
-            <label className="block text-xs text-muted mb-1">Price per sheet</label>
+            <label htmlFor={`${id}-price`} className="block text-xs text-muted mb-1">Price per sheet</label>
             <input
+              id={`${id}-price`}
               type="number"
               min="0"
               step="0.01"

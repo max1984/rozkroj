@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { KerfSettings } from './KerfSettings';
 import type { CuttingSettings } from '../../types';
 
@@ -71,5 +71,12 @@ describe('KerfSettings', () => {
     const trimInput = inputs[0];
     fireEvent.change(trimInput, { target: { value: '15' } });
     expect(setSettings).toHaveBeenCalledWith({ freshEdgeTrim: 15 });
+  });
+
+  it('associates the numeric fields with their labels, and the toggle with an accessible name', () => {
+    render(<KerfSettings />);
+    expect(screen.getByLabelText(/Trim per side/)).toBeTruthy();
+    expect(screen.getByLabelText(/Saw Kerf/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Fresh Edge' })).toBeTruthy();
   });
 });

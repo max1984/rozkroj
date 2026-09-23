@@ -1,7 +1,9 @@
+import { useId } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 
 export function KerfSettings() {
+  const id = useId();
   const settings = useStore(s => s.settings);
   const setSettings = useStore(s => s.setSettings);
   const { format, inputValue, toMm } = useUnitDisplay();
@@ -12,6 +14,8 @@ export function KerfSettings() {
         <label className="text-sm font-medium text-ink">Fresh Edge</label>
         <button
           onClick={() => setSettings({ freshEdge: !settings.freshEdge })}
+          aria-label="Fresh Edge"
+          aria-pressed={settings.freshEdge}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${settings.freshEdge ? 'bg-accent' : 'bg-surface-2'}`}
         >
           <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface transition-transform ${settings.freshEdge ? 'translate-x-4' : 'translate-x-1'}`} />
@@ -20,10 +24,11 @@ export function KerfSettings() {
 
       {settings.freshEdge && (
         <div>
-          <label className="block text-xs text-muted mb-1">
+          <label htmlFor={`${id}-trim`} className="block text-xs text-muted mb-1">
             Trim per side (<span className="font-mono">{format(settings.freshEdgeTrim)}</span>)
           </label>
           <input
+            id={`${id}-trim`}
             type="number"
             min="0"
             className="field font-mono tabular-nums"
@@ -37,10 +42,11 @@ export function KerfSettings() {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-ink mb-1">
+        <label htmlFor={`${id}-kerf`} className="block text-sm font-medium text-ink mb-1">
           Saw Kerf (<span className="font-mono">{format(settings.sawKerf)}</span>)
         </label>
         <input
+          id={`${id}-kerf`}
           type="number"
           min="0"
           step="0.5"
