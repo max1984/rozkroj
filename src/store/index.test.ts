@@ -16,6 +16,34 @@ beforeEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe('store: undo history noise', () => {
+  it('does not push a history entry for actions that only touch untracked fields', async () => {
+    const useStore = await freshStore();
+    useStore.getState().setHoveredPieceId('some-id');
+    useStore.getState().setSelectedPieceId('some-id');
+    useStore.getState().toggleDarkMode();
+    useStore.getState().recomputeLayout();
+
+    expect(useStore.temporal.getState().pastStates).toEqual([]);
+  });
+
+  it('pushes exactly one history entry for a single tracked-field action, not one per set() call', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+
+    // addPiece's own set({pieces}) call is the only real change; the
+    // recomputeLayout() that follows only touches `layout`, which isn't
+    // partialized, so it must not push a second, spurious entry.
+    expect(useStore.temporal.getState().pastStates).toHaveLength(1);
+  });
+});
+
 describe('store: pieces', () => {
   it('addPiece assigns an id and color, and recomputes the layout', async () => {
     const useStore = await freshStore();
@@ -182,24 +210,27 @@ describe('store: project lifecycle', () => {
     expect(useStore.getState().projectName).toBe('Keep me');
   });
 
-  // zundo's temporal middleware pushes a history entry on every set() call,
-  // including ones from recomputeLayout() that don't touch any partialized
-  // field — so history is never perfectly empty right after a load. What
-  // matters is that none of it can undo back into the *previous* project.
+  // pastStates holds snapshots to revert *to*, so a piece only shows up in
+  // history once a later change has pushed the state that contained it.
   function pastStatesMentionPiece(useStore: typeof UseStoreType, pieceName: string): boolean {
     return useStore.temporal.getState().pastStates.some(
       s => (s as { pieces?: { name: string }[] }).pieces?.some(p => p.name === pieceName)
     );
   }
 
-  it('newProject clears undo/redo history so it cannot revert into the old project', async () => {
-    const useStore = await freshStore();
+  function addTestPiece(useStore: typeof UseStoreType, name: string) {
     const materialId = useStore.getState().materials[0].id;
     useStore.getState().addPiece({
-      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      name, materialId, width: 400, height: 300, quantity: 1,
       grain: 'none', rotationAllowed: true, priority: false,
       edgeBanding: { top: false, right: false, bottom: false, left: false },
     });
+  }
+
+  it('newProject clears undo/redo history so it cannot revert into the old project', async () => {
+    const useStore = await freshStore();
+    addTestPiece(useStore, 'Shelf');
+    addTestPiece(useStore, 'Cabinet'); // pushes a past state that contains 'Shelf'
     expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(true);
 
     useStore.getState().newProject();
@@ -210,12 +241,8 @@ describe('store: project lifecycle', () => {
 
   it('loadProject clears undo/redo history so it cannot revert into a different project', async () => {
     const useStore = await freshStore();
-    const materialId = useStore.getState().materials[0].id;
-    useStore.getState().addPiece({
-      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
-      grain: 'none', rotationAllowed: true, priority: false,
-      edgeBanding: { top: false, right: false, bottom: false, left: false },
-    });
+    addTestPiece(useStore, 'Shelf');
+    addTestPiece(useStore, 'Cabinet'); // pushes a past state that contains 'Shelf'
     expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(true);
     const otherProject = { ...useStore.getState().exportProject(), id: 'other-id', pieces: [] };
 

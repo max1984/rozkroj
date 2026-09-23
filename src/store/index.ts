@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { shallow } from 'zustand/shallow';
 import { getInitialDarkMode, persistDarkMode } from '../utils/darkMode';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
@@ -261,6 +262,13 @@ export const useStore = create<AppState>()(
         algorithm: state.algorithm,
         projectName: state.projectName,
       }),
+      // Without this, every set() call — including ones that only touch
+      // untracked fields like layout, selectedPieceId, or hoveredPieceId (so
+      // on every hover!) — pushes a new history entry, since zundo otherwise
+      // records unconditionally. All tracked fields are only ever replaced
+      // with new references when they actually change, so a shallow compare
+      // is enough to skip no-op pushes.
+      equality: shallow,
     }
   )
 );
