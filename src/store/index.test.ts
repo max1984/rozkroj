@@ -181,4 +181,47 @@ describe('store: project lifecycle', () => {
     expect(useStore.getState().projectId).toBe(activeId);
     expect(useStore.getState().projectName).toBe('Keep me');
   });
+
+  // zundo's temporal middleware pushes a history entry on every set() call,
+  // including ones from recomputeLayout() that don't touch any partialized
+  // field — so history is never perfectly empty right after a load. What
+  // matters is that none of it can undo back into the *previous* project.
+  function pastStatesMentionPiece(useStore: typeof UseStoreType, pieceName: string): boolean {
+    return useStore.temporal.getState().pastStates.some(
+      s => (s as { pieces?: { name: string }[] }).pieces?.some(p => p.name === pieceName)
+    );
+  }
+
+  it('newProject clears undo/redo history so it cannot revert into the old project', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(true);
+
+    useStore.getState().newProject();
+
+    expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(false);
+    expect(useStore.temporal.getState().futureStates).toEqual([]);
+  });
+
+  it('loadProject clears undo/redo history so it cannot revert into a different project', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(true);
+    const otherProject = { ...useStore.getState().exportProject(), id: 'other-id', pieces: [] };
+
+    useStore.getState().loadProject(otherProject);
+
+    expect(pastStatesMentionPiece(useStore, 'Shelf')).toBe(false);
+    expect(useStore.temporal.getState().futureStates).toEqual([]);
+  });
 });

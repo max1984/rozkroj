@@ -198,6 +198,9 @@ export const useStore = create<AppState>()(
           pieces: project.pieces,
           offcutStock: project.offcutStock,
         });
+        // Undo/redo history belongs to the project being edited — carrying it
+        // across a switch would let Cmd+Z revert into a *different* project's data.
+        useStore.temporal.getState().clear();
         get().recomputeLayout();
       },
       exportProject: (): Project => {
@@ -218,6 +221,7 @@ export const useStore = create<AppState>()(
 
       newProject: () => {
         set({ ...blankProject('New Project'), layout: null, selectedPieceId: null, hoveredPieceId: null });
+        useStore.temporal.getState().clear();
         get().recomputeLayout();
       },
       duplicateProject: () => {
