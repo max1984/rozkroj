@@ -154,6 +154,23 @@ describe('store: settings', () => {
     expect(useStore.getState().settings.sawKerf).toBe(5);
     expect(useStore.getState().settings.freshEdge).toBe(true); // untouched field preserved
   });
+
+  it('setUnit persists the choice so future projects default to it', async () => {
+    const useStore = await freshStore();
+    useStore.getState().setUnit('inch');
+    expect(localStorage.getItem('rozkroj_last_unit')).toBe('inch');
+  });
+
+  it('starts a fresh session in the last unit the user chose, not always mm', async () => {
+    vi.resetModules();
+    const storage = new MemoryStorage();
+    storage.setItem('rozkroj_last_unit', 'inch');
+    vi.stubGlobal('localStorage', storage);
+
+    const mod = await import('./index');
+
+    expect(mod.useStore.getState().unit).toBe('inch');
+  });
 });
 
 describe('store: hasUnsavedChanges', () => {

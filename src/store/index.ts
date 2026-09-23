@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { shallow } from 'zustand/shallow';
 import { getInitialDarkMode, persistDarkMode } from '../utils/darkMode';
+import { getLastUnit, persistLastUnit } from '../utils/unitPreference';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
 import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
@@ -100,7 +101,7 @@ function blankProject(name = 'My Project') {
     projectId: nanoid(),
     projectName: name,
     projectCreatedAt: Date.now(),
-    unit: 'mm' as const,
+    unit: getLastUnit(),
     algorithm: 'maxrects' as const,
     settings: DEFAULT_SETTINGS,
     materials: [defaultMaterial()],
@@ -120,7 +121,10 @@ export const useStore = create<AppState>()(
       hasUnsavedChanges: false,
 
       setProjectName: (name) => set({ projectName: name }),
-      setUnit: (unit) => set({ unit }),
+      setUnit: (unit) => {
+        set({ unit });
+        persistLastUnit(unit);
+      },
       setAlgorithm: (algorithm) => {
         set({ algorithm });
         get().recomputeLayout();
