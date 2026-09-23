@@ -98,6 +98,7 @@ export const pl: Translations = {
   grainIndicator: 'usłojenie',
   edgeIndicator: 'krawędź',
   editPieceTitle: 'Edytuj element',
+  duplicatePieceTitle: 'Duplikuj element',
   deletePieceTitle: 'Usuń element',
 
   // EdgeBandingPicker

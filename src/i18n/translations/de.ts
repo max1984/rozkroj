@@ -87,6 +87,7 @@ export const de: Translations = {
   grainIndicator: 'Faser',
   edgeIndicator: 'Kante',
   editPieceTitle: 'Teil bearbeiten',
+  duplicatePieceTitle: 'Teil duplizieren',
   deletePieceTitle: 'Teil löschen',
 
   // EdgeBandingPicker

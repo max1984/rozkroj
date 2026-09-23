@@ -5,6 +5,7 @@ import { PieceRow } from './PieceRow';
 import type { MaterialStock, PieceDefinition } from '../../types';
 
 const removePiece = vi.fn();
+const duplicatePiece = vi.fn();
 const setHoveredPieceId = vi.fn();
 const setSelectedPieceId = vi.fn();
 const addPiece = vi.fn();
@@ -17,7 +18,7 @@ const materials: MaterialStock[] = [
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: Record<string, unknown>) => unknown) => selector({
-    removePiece, setHoveredPieceId, setSelectedPieceId, selectedPieceId, materials, addPiece, updatePiece,
+    removePiece, duplicatePiece, setHoveredPieceId, setSelectedPieceId, selectedPieceId, materials, addPiece, updatePiece,
   }),
 }));
 
@@ -79,9 +80,17 @@ describe('PieceRow', () => {
 
   it('removes the piece without triggering row selection', () => {
     const { container } = render(<PieceRow piece={piece()} />);
-    const deleteBtn = container.querySelectorAll('button')[1];
+    const deleteBtn = container.querySelectorAll('button')[2];
     fireEvent.click(deleteBtn);
     expect(removePiece).toHaveBeenCalledWith('p1');
+    expect(setSelectedPieceId).not.toHaveBeenCalled();
+  });
+
+  it('duplicates the piece without triggering row selection', () => {
+    const { container } = render(<PieceRow piece={piece()} />);
+    const duplicateBtn = container.querySelectorAll('button')[1];
+    fireEvent.click(duplicateBtn);
+    expect(duplicatePiece).toHaveBeenCalledWith('p1');
     expect(setSelectedPieceId).not.toHaveBeenCalled();
   });
 
@@ -101,9 +110,10 @@ describe('PieceRow', () => {
     expect(screen.getByText(/grain/)).toBeTruthy();
   });
 
-  it('exposes accessible names for the icon-only edit and delete buttons', () => {
+  it('exposes accessible names for the icon-only edit, duplicate and delete buttons', () => {
     render(<PieceRow piece={piece()} />);
     expect(screen.getByLabelText('Edit piece')).toBeTruthy();
+    expect(screen.getByLabelText('Duplicate piece')).toBeTruthy();
     expect(screen.getByLabelText('Delete piece')).toBeTruthy();
   });
 });

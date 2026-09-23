@@ -64,6 +64,7 @@ interface AppState {
   addPiece: (p: Omit<PieceDefinition, 'id' | 'color'>) => void;
   updatePiece: (id: string, p: Partial<PieceDefinition>) => void;
   removePiece: (id: string) => void;
+  duplicatePiece: (id: string) => void;
   setPieces: (pieces: PieceDefinition[]) => void;
 
   recomputeLayout: () => void;
@@ -175,6 +176,17 @@ export const useStore = create<AppState>()(
       },
       removePiece: (id) => {
         set(state => ({ pieces: state.pieces.filter(x => x.id !== id) }));
+        get().recomputeLayout();
+      },
+      duplicatePiece: (id) => {
+        set(state => {
+          const index = state.pieces.findIndex(x => x.id === id);
+          if (index === -1) return state;
+          const copy: PieceDefinition = { ...state.pieces[index], id: nanoid(), color: getPieceColor(state.pieces.length) };
+          const pieces = [...state.pieces];
+          pieces.splice(index + 1, 0, copy);
+          return { pieces };
+        });
         get().recomputeLayout();
       },
       setPieces: (pieces) => {

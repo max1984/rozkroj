@@ -89,6 +89,7 @@ export interface Translations {
   grainIndicator: string;
   edgeIndicator: string;
   editPieceTitle: string;
+  duplicatePieceTitle: string;
   deletePieceTitle: string;
 
   // EdgeBandingPicker

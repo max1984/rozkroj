@@ -97,6 +97,47 @@ describe('store: pieces', () => {
     expect(useStore.getState().pieces).toEqual([]);
     expect(useStore.getState().layout?.sheets).toEqual([]);
   });
+
+  it('duplicatePiece inserts a copy with a new id and color right after the original', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 2,
+      grain: 'horizontal', rotationAllowed: true, priority: true,
+      edgeBanding: { top: true, right: false, bottom: false, left: false },
+    });
+    useStore.getState().addPiece({
+      name: 'Door', materialId, width: 500, height: 200, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    const original = useStore.getState().pieces[0];
+
+    useStore.getState().duplicatePiece(original.id);
+
+    const { pieces } = useStore.getState();
+    expect(pieces).toHaveLength(3);
+    expect(pieces[1].id).not.toBe(original.id);
+    expect(pieces[1]).toMatchObject({
+      name: 'Shelf', width: 400, height: 300, quantity: 2,
+      grain: 'horizontal', priority: true, materialId,
+    });
+    expect(pieces[2].name).toBe('Door');
+  });
+
+  it('duplicatePiece does nothing when the id does not match any piece', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+
+    useStore.getState().duplicatePiece('missing-id');
+
+    expect(useStore.getState().pieces).toHaveLength(1);
+  });
 });
 
 describe('store: materials', () => {

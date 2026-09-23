@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Pencil, Copy, Trash2, GripVertical } from 'lucide-react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import type { PieceDefinition } from '../../types';
@@ -14,6 +14,7 @@ interface Props {
 export function PieceRow({ piece }: Props) {
   const { t } = useTranslation();
   const removePiece = useStore(s => s.removePiece);
+  const duplicatePiece = useStore(s => s.duplicatePiece);
   const setHoveredPieceId = useStore(s => s.setHoveredPieceId);
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
   const selectedPieceId = useStore(s => s.selectedPieceId);
@@ -61,6 +62,14 @@ export function PieceRow({ piece }: Props) {
         aria-label={t.editPieceTitle}
       >
         <Pencil size={13} />
+      </button>
+      <button
+        onClick={e => { e.stopPropagation(); duplicatePiece(piece.id); }}
+        className="p-1 rounded-md hover:bg-surface-2 text-muted"
+        title={t.duplicatePieceTitle}
+        aria-label={t.duplicatePieceTitle}
+      >
+        <Copy size={13} />
       </button>
       <button
         onClick={e => { e.stopPropagation(); removePiece(piece.id); }}
