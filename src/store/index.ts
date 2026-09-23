@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { shallow } from 'zustand/shallow';
 import { getInitialDarkMode, persistDarkMode } from '../utils/darkMode';
 import { getLastUnit, persistLastUnit } from '../utils/unitPreference';
+import { getInitialLanguage, persistLanguage } from '../utils/languagePreference';
+import type { Language } from '../i18n/types';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
 import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
@@ -42,6 +44,7 @@ interface AppState {
   selectedPieceId: string | null;
   hoveredPieceId: string | null;
   darkMode: boolean;
+  language: Language;
   hasUnsavedChanges: boolean;
 
   // Offcuts (saved stock)
@@ -66,6 +69,7 @@ interface AppState {
   setSelectedPieceId: (id: string | null) => void;
   setHoveredPieceId: (id: string | null) => void;
   toggleDarkMode: () => void;
+  setLanguage: (language: Language) => void;
 
   saveProject: () => void;
   loadProject: (project: Project) => void;
@@ -118,6 +122,7 @@ export const useStore = create<AppState>()(
       selectedPieceId: null,
       hoveredPieceId: null,
       darkMode: getInitialDarkMode(),
+      language: getInitialLanguage(),
       hasUnsavedChanges: false,
 
       setProjectName: (name) => set({ projectName: name }),
@@ -189,6 +194,10 @@ export const useStore = create<AppState>()(
         persistDarkMode(darkMode);
         return { darkMode };
       }),
+      setLanguage: (language) => {
+        set({ language });
+        persistLanguage(language);
+      },
 
       saveProject: () => {
         if (!saveProjectToLibrary(get().exportProject())) {
