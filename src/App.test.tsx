@@ -14,12 +14,13 @@ interface Temporal {
 const H = vi.hoisted(() => ({
   undo: vi.fn(),
   redo: vi.fn(),
-  mutable: { darkMode: false },
+  mutable: { darkMode: false, hasUnsavedChanges: false },
   temporalStoreRef: { current: null as UseBoundStore<StoreApi<Temporal>> | null },
 }));
 
 vi.mock('./store', () => {
   const useStore = (selector: (s: { darkMode: boolean }) => unknown) => selector({ darkMode: H.mutable.darkMode });
+  useStore.getState = () => ({ hasUnsavedChanges: H.mutable.hasUnsavedChanges });
   Object.defineProperty(useStore, 'temporal', { get: () => H.temporalStoreRef.current });
   return { useStore };
 });
@@ -35,6 +36,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   H.mutable.darkMode = false;
+  H.mutable.hasUnsavedChanges = false;
   document.documentElement.classList.remove('dark');
 });
 
@@ -72,5 +74,27 @@ describe('App', () => {
 
     expect(H.undo).not.toHaveBeenCalled();
     document.body.removeChild(input);
+  });
+
+  it('warns before unload when there are unsaved changes', () => {
+    H.mutable.hasUnsavedChanges = true;
+    render(<App />);
+    const event = new Event('beforeunload', { cancelable: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+
+    window.dispatchEvent(event);
+
+    expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('does not warn before unload when everything is saved', () => {
+    H.mutable.hasUnsavedChanges = false;
+    render(<App />);
+    const event = new Event('beforeunload', { cancelable: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+
+    window.dispatchEvent(event);
+
+    expect(preventDefaultSpy).not.toHaveBeenCalled();
   });
 });

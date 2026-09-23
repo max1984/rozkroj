@@ -156,6 +156,55 @@ describe('store: settings', () => {
   });
 });
 
+describe('store: hasUnsavedChanges', () => {
+  it('starts false for a fresh project', async () => {
+    const useStore = await freshStore();
+    expect(useStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it('becomes true after a tracked edit', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    expect(useStore.getState().hasUnsavedChanges).toBe(true);
+  });
+
+  it('does not become true from untracked-only changes like hovering', async () => {
+    const useStore = await freshStore();
+    useStore.getState().setHoveredPieceId('some-id');
+    useStore.getState().toggleDarkMode();
+    expect(useStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it('resets to false after saveProject', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    useStore.getState().saveProject();
+    expect(useStore.getState().hasUnsavedChanges).toBe(false);
+  });
+
+  it('resets to false after newProject', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    useStore.getState().newProject();
+    expect(useStore.getState().hasUnsavedChanges).toBe(false);
+  });
+});
+
 describe('store: project lifecycle', () => {
   it('newProject resets to a blank project with a fresh id', async () => {
     const useStore = await freshStore();

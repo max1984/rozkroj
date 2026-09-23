@@ -41,6 +41,7 @@ interface AppState {
   selectedPieceId: string | null;
   hoveredPieceId: string | null;
   darkMode: boolean;
+  hasUnsavedChanges: boolean;
 
   // Offcuts (saved stock)
   offcutStock: OffcutItem[];
@@ -116,6 +117,7 @@ export const useStore = create<AppState>()(
       selectedPieceId: null,
       hoveredPieceId: null,
       darkMode: getInitialDarkMode(),
+      hasUnsavedChanges: false,
 
       setProjectName: (name) => set({ projectName: name }),
       setUnit: (unit) => set({ unit }),
@@ -186,6 +188,7 @@ export const useStore = create<AppState>()(
 
       saveProject: () => {
         saveProjectToLibrary(get().exportProject());
+        set({ hasUnsavedChanges: false });
       },
       loadProject: (project) => {
         set({
@@ -202,6 +205,10 @@ export const useStore = create<AppState>()(
         // Undo/redo history belongs to the project being edited — carrying it
         // across a switch would let Cmd+Z revert into a *different* project's data.
         useStore.temporal.getState().clear();
+        // Must come after the set()/clear() above: both push/pop temporal
+        // history, which the hasUnsavedChanges subscriber reacts to — setting
+        // it last makes sure it isn't immediately flipped back to true.
+        set({ hasUnsavedChanges: false });
         get().recomputeLayout();
       },
       exportProject: (): Project => {
@@ -223,6 +230,7 @@ export const useStore = create<AppState>()(
       newProject: () => {
         set({ ...blankProject('New Project'), layout: null, selectedPieceId: null, hoveredPieceId: null });
         useStore.temporal.getState().clear();
+        set({ hasUnsavedChanges: false });
         get().recomputeLayout();
       },
       duplicateProject: () => {
@@ -284,3 +292,13 @@ if (activeId) {
   const project = loadProjectFromLibrary(activeId);
   if (project) useStore.getState().loadProject(project);
 }
+
+// Any genuine edit to tracked project data (pieces, materials, settings,
+// algorithm, projectName) pushes a new undo-history entry — piggyback on
+// that to flag unsaved changes, since saving is manual (no autosave) and
+// there's otherwise nothing warning the user before they navigate away.
+useStore.temporal.subscribe((state, prevState) => {
+  if (state.pastStates.length !== prevState.pastStates.length) {
+    useStore.setState({ hasUnsavedChanges: true });
+  }
+});

@@ -27,6 +27,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [undo, redo]);
 
+  useEffect(() => {
+    // Saving is manual (no autosave), so warn before the tab closes/reloads
+    // with edits that were never saved to the project library.
+    const handler = (e: BeforeUnloadEvent) => {
+      if (useStore.getState().hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
   return (
     <div className="flex flex-col h-screen bg-bg text-ink">
       <Toolbar />
