@@ -170,6 +170,20 @@ describe('Toolbar', () => {
     expect(H.exportProject).toHaveBeenCalledTimes(1);
   });
 
+  it('alerts instead of failing silently when PDF generation throws (e.g. a stale chunk after a redeploy)', async () => {
+    H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
+    H.exportProject.mockImplementation(exportedProject);
+    generatePdf.mockRejectedValueOnce(new Error('Failed to fetch dynamically imported module'));
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<Toolbar />);
+    fireEvent.click(screen.getByText('PDF'));
+
+    fireEvent.click(screen.getByText('Download PDF'));
+
+    await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    alertSpy.mockRestore();
+  });
+
   it('toggles dark mode', () => {
     render(<Toolbar />);
     fireEvent.click(screen.getByTitle('Toggle theme'));

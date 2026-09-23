@@ -33,13 +33,20 @@ export function Toolbar() {
 
   const handlePdf = async () => {
     if (!layout) return;
-    // jsPDF + autotable are a heavy dependency only needed once someone
-    // actually exports a PDF, so they're loaded on demand instead of
-    // bloating the initial bundle every visitor downloads.
-    const { generatePdf } = await import('../../utils/pdf');
-    const project = useStore.getState().exportProject();
-    await generatePdf(layout, project, pdfAllOnOne);
-    setShowPdfOpts(false);
+    try {
+      // jsPDF + autotable are a heavy dependency only needed once someone
+      // actually exports a PDF, so they're loaded on demand instead of
+      // bloating the initial bundle every visitor downloads. That chunk can
+      // fail to load — e.g. a stale page still open after a new deploy
+      // replaced it — so this needs its own error handling rather than
+      // failing as a silent, uncaught promise rejection.
+      const { generatePdf } = await import('../../utils/pdf');
+      const project = useStore.getState().exportProject();
+      await generatePdf(layout, project, pdfAllOnOne);
+      setShowPdfOpts(false);
+    } catch {
+      alert('Failed to generate the PDF. If the app was just updated, try reloading the page.');
+    }
   };
 
   return (
