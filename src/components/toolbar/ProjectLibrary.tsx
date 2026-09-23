@@ -75,7 +75,11 @@ export function ProjectLibrary() {
                     <div className="text-xs font-mono text-muted">{new Date(entry.updatedAt).toLocaleString()}</div>
                   </button>
                   <button
-                    onClick={() => { deleteProjectById(entry.id); refresh(); }}
+                    onClick={() => {
+                      if (!confirm(`Delete "${entry.name}"? This cannot be undone.`)) return;
+                      deleteProjectById(entry.id);
+                      refresh();
+                    }}
                     className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
                     title="Delete project"
                     aria-label="Delete project"

@@ -62,15 +62,30 @@ describe('ProjectLibrary', () => {
     expect(screen.queryByText('Bathroom')).toBeNull();
   });
 
-  it('deletes a project without loading it', () => {
+  it('deletes a project without loading it, after the user confirms', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
     render(<ProjectLibrary />);
     fireEvent.click(screen.getByTitle('Project library'));
 
     fireEvent.click(screen.getByTitle('Delete project'));
 
+    expect(confirmSpy).toHaveBeenCalledWith('Delete "Bathroom"? This cannot be undone.');
     expect(deleteProjectById).toHaveBeenCalledWith('other-id');
     expect(loadProjectById).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it('does not delete a project when the user cancels the confirmation', () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
+    render(<ProjectLibrary />);
+    fireEvent.click(screen.getByTitle('Project library'));
+
+    fireEvent.click(screen.getByTitle('Delete project'));
+
+    expect(deleteProjectById).not.toHaveBeenCalled();
+    confirmSpy.mockRestore();
   });
 
   it('creates a new project and closes the dialog', () => {
