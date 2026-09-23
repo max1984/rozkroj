@@ -100,4 +100,10 @@ describe('PieceRow', () => {
     rerender(<PieceRow piece={piece({ grain: 'horizontal' })} />);
     expect(screen.getByText(/grain/)).toBeTruthy();
   });
+
+  it('exposes accessible names for the icon-only edit and delete buttons', () => {
+    render(<PieceRow piece={piece()} />);
+    expect(screen.getByLabelText('Edit piece')).toBeTruthy();
+    expect(screen.getByLabelText('Delete piece')).toBeTruthy();
+  });
 });

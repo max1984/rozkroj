@@ -19,7 +19,7 @@ export function ProjectLibrary() {
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>
       <Dialog.Trigger asChild>
-        <button className="icon-btn" title="Project library">
+        <button className="icon-btn" title="Project library" aria-label="Project library">
           <FolderKanban size={15} />
         </button>
       </Dialog.Trigger>
@@ -78,6 +78,7 @@ export function ProjectLibrary() {
                     onClick={() => { deleteProjectById(entry.id); refresh(); }}
                     className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
                     title="Delete project"
+                    aria-label="Delete project"
                   >
                     <Trash2 size={13} />
                   </button>

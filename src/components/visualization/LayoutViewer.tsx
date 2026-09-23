@@ -30,6 +30,8 @@ export function LayoutViewer() {
             disabled={idx === 0}
             onClick={() => setSheetIdx(i => i - 1)}
             className="icon-btn !p-1"
+            title="Previous sheet"
+            aria-label="Previous sheet"
           >
             <ChevronLeft size={16} />
           </button>
@@ -44,6 +46,8 @@ export function LayoutViewer() {
             disabled={idx === layout.sheets.length - 1}
             onClick={() => setSheetIdx(i => i + 1)}
             className="icon-btn !p-1"
+            title="Next sheet"
+            aria-label="Next sheet"
           >
             <ChevronRight size={16} />
           </button>

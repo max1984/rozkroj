@@ -28,6 +28,7 @@ export function MaterialManager() {
           }}
           className="icon-btn !p-1"
           title="Add material"
+          aria-label="Add material"
         >
           <Plus size={14} />
         </button>
@@ -158,6 +159,7 @@ function MaterialRow({
                 onClick={onRemove}
                 className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
                 title="Remove material"
+                aria-label="Remove material"
               >
                 <Trash2 size={13} />
               </button>

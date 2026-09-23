@@ -45,7 +45,7 @@ export function OffcutStock() {
               {format(oc.width)} × {format(oc.height)}
               {materials.length > 1 && <span className="text-muted font-sans"> · {materialName(oc.materialId)}</span>}
             </span>
-            <button onClick={() => removeOffcut(oc.id)} className="text-muted hover:text-danger">
+            <button onClick={() => removeOffcut(oc.id)} className="text-muted hover:text-danger" title="Remove offcut" aria-label="Remove offcut">
               <Trash2 size={12} />
             </button>
           </div>

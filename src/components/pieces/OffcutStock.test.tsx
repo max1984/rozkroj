@@ -75,4 +75,10 @@ describe('OffcutStock', () => {
     expect(addOffcut).toHaveBeenCalledWith('m1', 300, 200);
     expect(addOffcut).toHaveBeenCalledWith('m1', 150, 150);
   });
+
+  it('exposes an accessible name for the icon-only remove button', () => {
+    offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
+    render(<OffcutStock />);
+    expect(screen.getByLabelText('Remove offcut')).toBeTruthy();
+  });
 });

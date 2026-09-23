@@ -55,12 +55,16 @@ export function PieceRow({ piece }: Props) {
       <button
         onClick={e => { e.stopPropagation(); setEditing(true); }}
         className="p-1 rounded-md hover:bg-surface-2 text-muted"
+        title="Edit piece"
+        aria-label="Edit piece"
       >
         <Pencil size={13} />
       </button>
       <button
         onClick={e => { e.stopPropagation(); removePiece(piece.id); }}
         className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
+        title="Delete piece"
+        aria-label="Delete piece"
       >
         <Trash2 size={13} />
       </button>

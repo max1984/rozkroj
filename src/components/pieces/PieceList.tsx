@@ -40,7 +40,7 @@ export function PieceList() {
           )}
         </h2>
         <div className="flex gap-1">
-          <label className="icon-btn !p-1 cursor-pointer" title="Import CSV">
+          <label className="icon-btn !p-1 cursor-pointer" title="Import CSV" aria-label="Import CSV">
             <Upload size={14} />
             <input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
           </label>
@@ -48,6 +48,7 @@ export function PieceList() {
             onClick={() => setAdding(true)}
             className="icon-btn !p-1"
             title="Add piece"
+            aria-label="Add piece"
           >
             <Plus size={14} />
           </button>

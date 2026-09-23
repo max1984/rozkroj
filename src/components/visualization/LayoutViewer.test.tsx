@@ -99,4 +99,11 @@ describe('LayoutViewer', () => {
     render(<LayoutViewer />);
     expect(screen.getByText(/2 pieces could not be placed/)).toBeTruthy();
   });
+
+  it('exposes accessible names for the icon-only sheet navigation buttons', () => {
+    layout = { sheets: [sheet(), sheet({ sheetIndex: 1 })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
+    render(<LayoutViewer />);
+    expect(screen.getByLabelText('Previous sheet')).toBeTruthy();
+    expect(screen.getByLabelText('Next sheet')).toBeTruthy();
+  });
 });

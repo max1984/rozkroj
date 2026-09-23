@@ -51,6 +51,7 @@ export function Toolbar() {
           value={projectName}
           onChange={e => setProjectName(e.target.value)}
           title="Click to rename project"
+          aria-label="Project name"
         />
       </div>
 
@@ -61,6 +62,7 @@ export function Toolbar() {
           disabled={pastStates.length === 0}
           className="icon-btn"
           title="Undo (⌘Z)"
+          aria-label="Undo"
         >
           <Undo2 size={15} />
         </button>
@@ -69,6 +71,7 @@ export function Toolbar() {
           disabled={futureStates.length === 0}
           className="icon-btn"
           title="Redo (⌘⇧Z)"
+          aria-label="Redo"
         >
           <Redo2 size={15} />
         </button>
@@ -78,10 +81,10 @@ export function Toolbar() {
 
       {/* Save / Load */}
       <ProjectLibrary />
-      <button onClick={save} className="icon-btn" title="Save project">
+      <button onClick={save} className="icon-btn" title="Save project" aria-label="Save project">
         <Save size={15} />
       </button>
-      <label className="icon-btn cursor-pointer" title="Import project file">
+      <label className="icon-btn cursor-pointer" title="Import project file" aria-label="Import project file">
         <FolderOpen size={15} />
         <input
           type="file"
@@ -90,7 +93,7 @@ export function Toolbar() {
           onChange={e => { const f = e.target.files?.[0]; if (f) loadFromFile(f); e.target.value = ''; }}
         />
       </label>
-      <button onClick={exportToFile} className="icon-btn" title="Export project file">
+      <button onClick={exportToFile} className="icon-btn" title="Export project file" aria-label="Export project file">
         <Download size={15} />
       </button>
 
@@ -102,6 +105,7 @@ export function Toolbar() {
         disabled={pieces.length === 0}
         className="icon-btn"
         title="Export cut list as CSV"
+        aria-label="Export cut list as CSV"
       >
         <FileDown size={15} />
       </button>
@@ -131,7 +135,7 @@ export function Toolbar() {
       <div className="flex-1" />
 
       {/* Dark mode */}
-      <button onClick={toggleDarkMode} className="icon-btn" title="Toggle theme">
+      <button onClick={toggleDarkMode} className="icon-btn" title="Toggle theme" aria-label="Toggle theme">
         {darkMode ? <Sun size={15} /> : <Moon size={15} />}
       </button>
     </header>
