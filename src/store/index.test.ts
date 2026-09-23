@@ -88,6 +88,21 @@ describe('store: materials', () => {
     expect(useStore.getState().materials.map(m => m.id)).toEqual([firstId]);
     expect(useStore.getState().pieces[0].materialId).toBe(firstId);
   });
+
+  it('removeMaterial purges offcut stock belonging to the removed material, keeping others', async () => {
+    const useStore = await freshStore();
+    const firstId = useStore.getState().materials[0].id;
+    useStore.getState().addMaterial({ name: 'MDF', size: { label: 'Custom', width: 1000, height: 500, custom: true }, pricePerSheet: 50 });
+    const secondId = useStore.getState().materials[1].id;
+    useStore.getState().addOffcut(firstId, 300, 300);
+    useStore.getState().addOffcut(secondId, 200, 200);
+
+    useStore.getState().removeMaterial(secondId);
+
+    const remaining = useStore.getState().offcutStock;
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].materialId).toBe(firstId);
+  });
 });
 
 describe('store: settings', () => {

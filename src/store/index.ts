@@ -136,13 +136,16 @@ export const useStore = create<AppState>()(
         get().recomputeLayout();
       },
       removeMaterial: (id) => {
-        const { materials, pieces } = get();
+        const { materials, pieces, offcutStock } = get();
         if (materials.length <= 1) return;
         const fallback = materials.find(m => m.id !== id);
         if (!fallback) return;
         set({
           materials: materials.filter(m => m.id !== id),
           pieces: pieces.map(p => p.materialId === id ? { ...p, materialId: fallback.id } : p),
+          // Offcuts are physical scrap of the removed material's sheet stock — they
+          // can't be reassigned to another material, so they're no longer usable.
+          offcutStock: offcutStock.filter(o => o.materialId !== id),
         });
         get().recomputeLayout();
       },
