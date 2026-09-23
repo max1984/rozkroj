@@ -15,6 +15,7 @@ export function AlgorithmPicker() {
           <button
             key={opt.value}
             onClick={() => setAlgorithm(opt.value)}
+            aria-pressed={algorithm === opt.value}
             className={`flex-1 rounded-md border px-3 py-2 text-left text-sm transition-colors ${algorithm === opt.value ? 'border-accent bg-accent-soft text-ink' : 'border-line hover:border-muted'}`}
           >
             <div className="font-medium">{opt.label}</div>

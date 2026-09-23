@@ -42,4 +42,11 @@ describe('EdgeBandingPicker', () => {
     fireEvent.click(getByTitle('Left edge'));
     expect(onChange).toHaveBeenLastCalledWith({ top: false, right: false, bottom: false, left: true });
   });
+
+  it('reflects banded state via aria-pressed for assistive tech', () => {
+    const value: EdgeBanding = { top: true, right: false, bottom: false, left: false };
+    const { getByTitle } = render(<EdgeBandingPicker value={value} onChange={vi.fn()} />);
+    expect(getByTitle('Top edge').getAttribute('aria-pressed')).toBe('true');
+    expect(getByTitle('Right edge').getAttribute('aria-pressed')).toBe('false');
+  });
 });

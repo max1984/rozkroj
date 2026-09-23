@@ -30,4 +30,10 @@ describe('UnitToggle', () => {
     fireEvent.click(screen.getByText('mm'));
     expect(setUnit).toHaveBeenCalledWith('mm');
   });
+
+  it('marks the active unit as pressed for assistive tech, and the other as not', () => {
+    render(<UnitToggle />);
+    expect(screen.getByText('mm').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByText('inch').getAttribute('aria-pressed')).toBe('false');
+  });
 });

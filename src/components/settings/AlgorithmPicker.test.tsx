@@ -37,4 +37,13 @@ describe('AlgorithmPicker', () => {
     const optimalBtn = Array.from(buttons).find(b => b.textContent?.includes('Optimal'))!;
     expect(optimalBtn.className).toContain('border-accent');
   });
+
+  it('marks the active algorithm as pressed for assistive tech, and the other as not', () => {
+    const { container } = render(<AlgorithmPicker />);
+    const buttons = container.querySelectorAll('button');
+    const optimalBtn = Array.from(buttons).find(b => b.textContent?.includes('Optimal'))!;
+    const easyCutBtn = Array.from(buttons).find(b => b.textContent?.includes('Easy Cut'))!;
+    expect(optimalBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(easyCutBtn.getAttribute('aria-pressed')).toBe('false');
+  });
 });

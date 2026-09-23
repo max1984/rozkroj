@@ -27,6 +27,8 @@ export function EdgeBandingPicker({ value, onChange }: Props) {
             key={edge.key}
             type="button"
             title={edge.label}
+            aria-label={edge.label}
+            aria-pressed={value[edge.key]}
             onClick={() => toggle(edge.key)}
             className={`absolute rounded-full transition-colors ${edge.className} ${
               value[edge.key] ? 'bg-accent' : 'bg-surface-2 hover:bg-line'

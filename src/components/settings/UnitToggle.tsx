@@ -10,6 +10,7 @@ export function UnitToggle() {
         <button
           key={u}
           onClick={() => setUnit(u)}
+          aria-pressed={unit === u}
           className={`px-3 py-1 text-sm font-mono rounded transition-colors ${unit === u ? 'bg-accent text-accent-ink' : 'text-muted hover:bg-surface-2'}`}
         >
           {u === 'mm' ? 'mm' : 'inch'}
