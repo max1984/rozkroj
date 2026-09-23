@@ -1,5 +1,6 @@
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
+import { useTranslation } from '../../hooks/useTranslation';
 import { totalBandingLengthMm } from '../../utils/edgeBanding';
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'warn' | 'danger' }) {
@@ -18,6 +19,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'wa
 }
 
 export function SummaryPanel() {
+  const { t } = useTranslation();
   const layout = useStore(s => s.layout);
   const pieces = useStore(s => s.pieces);
   const { format } = useUnitDisplay();
@@ -30,16 +32,16 @@ export function SummaryPanel() {
 
   return (
     <div className="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-lg border border-line border-l-2 border-l-accent bg-surface-2 px-4 py-3">
-      <Stat label="Sheets" value={`${freshSheets}${offcutSheets > 0 ? ` +${offcutSheets} offcut` : ''}`} />
+      <Stat label={t.sheetsLabel} value={`${freshSheets}${offcutSheets > 0 ? t.offcutSuffix(offcutSheets) : ''}`} />
       <Stat
-        label="Total waste"
+        label={t.totalWasteLabel}
         value={`${layout.totalWastePercent}%`}
         tone={layout.totalWastePercent > 30 ? 'danger' : layout.totalWastePercent > 15 ? 'warn' : undefined}
       />
-      {layout.totalCost > 0 && <Stat label="Material cost" value={layout.totalCost.toFixed(2)} />}
-      {bandingMm > 0 && <Stat label="Edge banding" value={format(Math.round(bandingMm))} />}
+      {layout.totalCost > 0 && <Stat label={t.materialCostLabel} value={layout.totalCost.toFixed(2)} />}
+      {bandingMm > 0 && <Stat label={t.edgeBandingLabel} value={format(Math.round(bandingMm))} />}
       {layout.unplacedPieces.length > 0 && (
-        <Stat label="Unplaced" value={String(layout.unplacedPieces.length)} tone="danger" />
+        <Stat label={t.unplacedLabel} value={String(layout.unplacedPieces.length)} tone="danger" />
       )}
     </div>
   );

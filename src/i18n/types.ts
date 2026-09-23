@@ -84,6 +84,7 @@ export interface Translations {
 
   // PieceRow
   grainIndicator: string;
+  edgeIndicator: string;
   editPieceTitle: string;
   deletePieceTitle: string;
 

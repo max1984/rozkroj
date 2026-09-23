@@ -5,12 +5,14 @@ import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import type { PieceDefinition } from '../../types';
 import { PieceForm } from './PieceForm';
 import { edgeCount } from '../../utils/edgeBanding';
+import { useTranslation } from '../../hooks/useTranslation';
 
 interface Props {
   piece: PieceDefinition;
 }
 
 export function PieceRow({ piece }: Props) {
+  const { t } = useTranslation();
   const removePiece = useStore(s => s.removePiece);
   const setHoveredPieceId = useStore(s => s.setHoveredPieceId);
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
@@ -47,24 +49,24 @@ export function PieceRow({ piece }: Props) {
         <div className="text-xs font-mono tabular-nums text-muted">
           {format(piece.width)} × {format(piece.height)} × {piece.quantity}
           {material && materials.length > 1 && <span className="ml-1 font-sans">· {material.name}</span>}
-          {piece.grain !== 'none' && <span className="ml-1 font-sans text-warn">⟶ grain</span>}
-          {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 font-sans text-accent">▭ edge</span>}
+          {piece.grain !== 'none' && <span className="ml-1 font-sans text-warn">⟶ {t.grainIndicator}</span>}
+          {edgeCount(piece.edgeBanding) > 0 && <span className="ml-1 font-sans text-accent">▭ {t.edgeIndicator}</span>}
           {piece.priority && <span className="ml-1 font-sans text-warn">★</span>}
         </div>
       </div>
       <button
         onClick={e => { e.stopPropagation(); setEditing(true); }}
         className="p-1 rounded-md hover:bg-surface-2 text-muted"
-        title="Edit piece"
-        aria-label="Edit piece"
+        title={t.editPieceTitle}
+        aria-label={t.editPieceTitle}
       >
         <Pencil size={13} />
       </button>
       <button
         onClick={e => { e.stopPropagation(); removePiece(piece.id); }}
         className="p-1 rounded-md hover:bg-danger-soft text-muted hover:text-danger"
-        title="Delete piece"
-        aria-label="Delete piece"
+        title={t.deletePieceTitle}
+        aria-label={t.deletePieceTitle}
       >
         <Trash2 size={13} />
       </button>

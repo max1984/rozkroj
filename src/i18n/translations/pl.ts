@@ -93,6 +93,7 @@ export const pl: Translations = {
 
   // PieceRow
   grainIndicator: 'usłojenie',
+  edgeIndicator: 'krawędź',
   editPieceTitle: 'Edytuj element',
   deletePieceTitle: 'Usuń element',
 

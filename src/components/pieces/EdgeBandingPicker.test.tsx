@@ -4,6 +4,14 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
 import type { EdgeBanding } from '../../types';
 
+// EdgeBandingPicker now reads translations via useTranslation(), which pulls
+// in the real store module unless mocked — and that module's bootstrap code
+// touches localStorage at import time, which Node's built-in (broken without
+// --localstorage-file) global shadows jsdom's working implementation of.
+vi.mock('../../store', () => ({
+  useStore: (selector: (s: { language: undefined }) => unknown) => selector({ language: undefined }),
+}));
+
 const NONE: EdgeBanding = { top: false, right: false, bottom: false, left: false };
 
 afterEach(cleanup);

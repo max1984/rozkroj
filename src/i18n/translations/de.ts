@@ -82,6 +82,7 @@ export const de: Translations = {
 
   // PieceRow
   grainIndicator: 'Faser',
+  edgeIndicator: 'Kante',
   editPieceTitle: 'Teil bearbeiten',
   deletePieceTitle: 'Teil löschen',
 

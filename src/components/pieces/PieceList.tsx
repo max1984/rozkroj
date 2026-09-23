@@ -4,8 +4,10 @@ import { useStore } from '../../store';
 import { PieceRow } from './PieceRow';
 import { PieceForm } from './PieceForm';
 import { importCsv } from '../../utils/csv';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function PieceList() {
+  const { t } = useTranslation();
   const pieces = useStore(s => s.pieces);
   const setPieces = useStore(s => s.setPieces);
   const unit = useStore(s => s.unit);
@@ -25,7 +27,7 @@ export function PieceList() {
       (imported, unmatchedMaterialCount) => {
         setPieces([...useStore.getState().pieces, ...imported]);
         if (unmatchedMaterialCount > 0) {
-          alert(`${unmatchedMaterialCount} piece${unmatchedMaterialCount !== 1 ? 's' : ''} had a Material that didn't match any existing material and ${unmatchedMaterialCount !== 1 ? 'were' : 'was'} assigned to the default instead.`);
+          alert(t.csvUnmatchedMaterialWarning(unmatchedMaterialCount));
         }
       },
       (err) => alert(err)
@@ -37,23 +39,23 @@ export function PieceList() {
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-ink">
-          Pieces
+          {t.piecesHeading}
           {pieces.length > 0 && (
             <span className="ml-2 text-xs font-mono font-normal text-muted">
-              ({pieces.reduce((s, p) => s + p.quantity, 0)} total)
+              {t.totalCount(pieces.reduce((s, p) => s + p.quantity, 0))}
             </span>
           )}
         </h2>
         <div className="flex gap-1">
-          <label className="icon-btn !p-1 cursor-pointer" title="Import CSV" aria-label="Import CSV">
+          <label className="icon-btn !p-1 cursor-pointer" title={t.importCsvTitle} aria-label={t.importCsvTitle}>
             <Upload size={14} />
             <input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} />
           </label>
           <button
             onClick={() => setAdding(true)}
             className="icon-btn !p-1"
-            title="Add piece"
-            aria-label="Add piece"
+            title={t.addPieceTitle}
+            aria-label={t.addPieceTitle}
           >
             <Plus size={14} />
           </button>
@@ -68,8 +70,8 @@ export function PieceList() {
 
       {pieces.length === 0 && !adding && (
         <div className="text-center py-8 text-sm text-muted">
-          No pieces yet.<br />
-          <button onClick={() => setAdding(true)} className="text-accent hover:underline mt-1">Add your first piece</button>
+          {t.noPiecesYet}<br />
+          <button onClick={() => setAdding(true)} className="text-accent hover:underline mt-1">{t.addFirstPiece}</button>
         </div>
       )}
 

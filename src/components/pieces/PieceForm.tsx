@@ -4,6 +4,7 @@ import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
 import { DEFAULT_EDGE_BANDING } from '../../constants/defaults';
 import { parsePositiveInt } from '../../utils/validation';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { PieceDefinition, GrainDirection, EdgeBanding } from '../../types';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 
 export function PieceForm({ editing, onClose }: Props) {
   const formId = useId();
+  const { t } = useTranslation();
   const addPiece = useStore(s => s.addPiece);
   const updatePiece = useStore(s => s.updatePiece);
   const materials = useStore(s => s.materials);
@@ -46,12 +48,12 @@ export function PieceForm({ editing, onClose }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3 p-4">
       <div>
-        <label htmlFor={`${formId}-name`} className="block text-xs text-muted mb-1">Name (optional)</label>
+        <label htmlFor={`${formId}-name`} className="block text-xs text-muted mb-1">{t.nameOptionalLabel}</label>
         <input
           id={`${formId}-name`}
           type="text"
           className="field"
-          placeholder="e.g. Left Side"
+          placeholder={t.namePlaceholder}
           value={name}
           onChange={e => setName(e.target.value)}
         />
@@ -59,7 +61,7 @@ export function PieceForm({ editing, onClose }: Props) {
 
       {materials.length > 1 && (
         <div>
-          <label htmlFor={`${formId}-material`} className="block text-xs text-muted mb-1">Material</label>
+          <label htmlFor={`${formId}-material`} className="block text-xs text-muted mb-1">{t.materialLabel}</label>
           <select
             id={`${formId}-material`}
             className="field"
@@ -75,7 +77,7 @@ export function PieceForm({ editing, onClose }: Props) {
 
       <div className="flex gap-2">
         <div className="flex-1">
-          <label htmlFor={`${formId}-width`} className="block text-xs text-muted mb-1">Width ({unit})</label>
+          <label htmlFor={`${formId}-width`} className="block text-xs text-muted mb-1">{t.widthWithUnit(unit)}</label>
           <input
             id={`${formId}-width`}
             required
@@ -88,7 +90,7 @@ export function PieceForm({ editing, onClose }: Props) {
           />
         </div>
         <div className="flex-1">
-          <label htmlFor={`${formId}-height`} className="block text-xs text-muted mb-1">Height ({unit})</label>
+          <label htmlFor={`${formId}-height`} className="block text-xs text-muted mb-1">{t.heightWithUnit(unit)}</label>
           <input
             id={`${formId}-height`}
             required
@@ -101,7 +103,7 @@ export function PieceForm({ editing, onClose }: Props) {
           />
         </div>
         <div className="w-20">
-          <label htmlFor={`${formId}-qty`} className="block text-xs text-muted mb-1">Qty</label>
+          <label htmlFor={`${formId}-qty`} className="block text-xs text-muted mb-1">{t.qtyLabel}</label>
           <input
             id={`${formId}-qty`}
             required
@@ -115,27 +117,27 @@ export function PieceForm({ editing, onClose }: Props) {
       </div>
 
       <div>
-        <label htmlFor={`${formId}-grain`} className="block text-xs text-muted mb-1">Grain Direction</label>
+        <label htmlFor={`${formId}-grain`} className="block text-xs text-muted mb-1">{t.grainDirectionLabel}</label>
         <select
           id={`${formId}-grain`}
           className="field"
           value={grain}
           onChange={e => setGrain(e.target.value as GrainDirection)}
         >
-          <option value="none">None</option>
-          <option value="horizontal">Horizontal (width direction)</option>
-          <option value="vertical">Vertical (height direction)</option>
+          <option value="none">{t.grainNone}</option>
+          <option value="horizontal">{t.grainHorizontal}</option>
+          <option value="vertical">{t.grainVertical}</option>
         </select>
       </div>
 
       <div className="flex gap-4">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={rotationAllowed} onChange={e => setRotationAllowed(e.target.checked)} className="rounded accent-accent" />
-          Allow rotation
+          {t.allowRotation}
         </label>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={priority} onChange={e => setPriority(e.target.checked)} className="rounded accent-accent" />
-          Priority piece
+          {t.priorityPiece}
         </label>
       </div>
 
@@ -146,14 +148,14 @@ export function PieceForm({ editing, onClose }: Props) {
           type="submit"
           className="flex-1 btn-accent px-3 py-2 text-sm"
         >
-          {editing ? 'Update' : 'Add Piece'}
+          {editing ? t.updateButton : t.addPieceButton}
         </button>
         <button
           type="button"
           onClick={onClose}
           className="rounded-md border border-line px-3 py-2 text-sm hover:bg-surface-2 transition-colors"
         >
-          Cancel
+          {t.cancelButton}
         </button>
       </div>
     </form>

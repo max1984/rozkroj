@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStore } from '../../store';
 import { SheetCanvas } from './SheetCanvas';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function LayoutViewer() {
+  const { t } = useTranslation();
   const layout = useStore(s => s.layout);
   const materials = useStore(s => s.materials);
   const pieces = useStore(s => s.pieces);
@@ -12,7 +14,7 @@ export function LayoutViewer() {
   if (!layout || layout.sheets.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-muted text-sm">
-        {pieces.length === 0 ? 'Add pieces to see the layout' : 'Computing layout…'}
+        {pieces.length === 0 ? t.addPiecesPrompt : t.computingLayout}
       </div>
     );
   }
@@ -30,31 +32,31 @@ export function LayoutViewer() {
             disabled={idx === 0}
             onClick={() => setSheetIdx(i => i - 1)}
             className="icon-btn !p-1"
-            title="Previous sheet"
-            aria-label="Previous sheet"
+            title={t.prevSheetTitle}
+            aria-label={t.prevSheetTitle}
           >
             <ChevronLeft size={16} />
           </button>
           <span className="text-sm font-medium font-mono tabular-nums">
-            Sheet {idx + 1} / {layout.sheets.length}
+            {t.sheetCounter(idx + 1, layout.sheets.length)}
             {material && materials.length > 1 && <span className="text-muted font-normal font-sans"> — {material.name}</span>}
             {sheet.sourceOffcutId && (
-              <span className="ml-1.5 text-[10px] font-sans font-semibold uppercase tracking-wide text-good align-middle">offcut</span>
+              <span className="ml-1.5 text-[10px] font-sans font-semibold uppercase tracking-wide text-good align-middle">{t.offcutBadge}</span>
             )}
           </span>
           <button
             disabled={idx === layout.sheets.length - 1}
             onClick={() => setSheetIdx(i => i + 1)}
             className="icon-btn !p-1"
-            title="Next sheet"
-            aria-label="Next sheet"
+            title={t.nextSheetTitle}
+            aria-label={t.nextSheetTitle}
           >
             <ChevronRight size={16} />
           </button>
         </div>
 
         <span className={`text-sm font-medium font-mono tabular-nums ${sheet.wastePercent > 30 ? 'text-danger' : sheet.wastePercent > 15 ? 'text-warn' : 'text-good'}`}>
-          {sheet.wastePercent}% waste on this sheet
+          {t.wastePercentOnSheet(sheet.wastePercent)}
         </span>
       </div>
 
@@ -66,7 +68,7 @@ export function LayoutViewer() {
 
       {layout.unplacedPieces.length > 0 && (
         <div className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger">
-          ⚠ {layout.unplacedPieces.length} piece{layout.unplacedPieces.length !== 1 ? 's' : ''} could not be placed (too large for sheet)
+          {t.unplacedWarning(layout.unplacedPieces.length)}
         </div>
       )}
     </div>
