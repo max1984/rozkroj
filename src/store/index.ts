@@ -4,6 +4,7 @@ import { getInitialDarkMode, persistDarkMode } from '../utils/darkMode';
 import { getLastUnit, persistLastUnit } from '../utils/unitPreference';
 import { getInitialLanguage, persistLanguage } from '../utils/languagePreference';
 import type { Language } from '../i18n/types';
+import { TRANSLATIONS } from '../i18n';
 import { temporal } from 'zundo';
 import { nanoid } from 'nanoid';
 import type { PieceDefinition, CuttingSettings, MaterialStock, OffcutItem, LayoutResult, Project } from '../types';
@@ -201,7 +202,7 @@ export const useStore = create<AppState>()(
 
       saveProject: () => {
         if (!saveProjectToLibrary(get().exportProject())) {
-          alert('Failed to save — your browser storage may be full or unavailable.');
+          alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).saveFailed);
           return;
         }
         set({ hasUnsavedChanges: false });
@@ -253,7 +254,7 @@ export const useStore = create<AppState>()(
         const project = get().exportProject();
         const copy: Project = { ...project, id: nanoid(), name: `${project.name} (copy)`, createdAt: Date.now(), updatedAt: Date.now() };
         if (!saveProjectToLibrary(copy)) {
-          alert('Failed to save the duplicate — your browser storage may be full or unavailable.');
+          alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).duplicateSaveFailed);
           return;
         }
         get().loadProject(copy);
