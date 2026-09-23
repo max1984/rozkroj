@@ -55,6 +55,20 @@ describe('saveProjectToLibrary / loadProjectFromLibrary', () => {
     expect(listProjects()).toHaveLength(1);
     expect(listProjects()[0].name).toBe('Renamed');
   });
+
+  it('returns true on a successful save', () => {
+    expect(saveProjectToLibrary(project())).toBe(true);
+  });
+
+  it('returns false instead of throwing when localStorage write fails (e.g. quota exceeded)', () => {
+    vi.stubGlobal('localStorage', {
+      setItem: () => { throw new Error('QuotaExceededError'); },
+      getItem: () => null,
+    });
+    expect(() => saveProjectToLibrary(project())).not.toThrow();
+    expect(saveProjectToLibrary(project())).toBe(false);
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('listProjects', () => {

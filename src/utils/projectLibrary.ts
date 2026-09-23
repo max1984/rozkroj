@@ -46,12 +46,18 @@ export function loadProjectFromLibrary(id: string): Project | null {
   }
 }
 
-export function saveProjectToLibrary(project: Project): void {
-  localStorage.setItem(projectKey(project.id), JSON.stringify(project));
-  const entries = readIndex().filter(e => e.id !== project.id);
-  entries.push({ id: project.id, name: project.name, updatedAt: project.updatedAt });
-  writeIndex(entries);
-  setActiveProjectId(project.id);
+/** Returns false (instead of throwing) if localStorage write fails, e.g. quota exceeded or unavailable. */
+export function saveProjectToLibrary(project: Project): boolean {
+  try {
+    localStorage.setItem(projectKey(project.id), JSON.stringify(project));
+    const entries = readIndex().filter(e => e.id !== project.id);
+    entries.push({ id: project.id, name: project.name, updatedAt: project.updatedAt });
+    writeIndex(entries);
+    setActiveProjectId(project.id);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function deleteProjectFromLibrary(id: string): void {

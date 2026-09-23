@@ -187,7 +187,10 @@ export const useStore = create<AppState>()(
       }),
 
       saveProject: () => {
-        saveProjectToLibrary(get().exportProject());
+        if (!saveProjectToLibrary(get().exportProject())) {
+          alert('Failed to save — your browser storage may be full or unavailable.');
+          return;
+        }
         set({ hasUnsavedChanges: false });
       },
       loadProject: (project) => {
@@ -236,7 +239,10 @@ export const useStore = create<AppState>()(
       duplicateProject: () => {
         const project = get().exportProject();
         const copy: Project = { ...project, id: nanoid(), name: `${project.name} (copy)`, createdAt: Date.now(), updatedAt: Date.now() };
-        saveProjectToLibrary(copy);
+        if (!saveProjectToLibrary(copy)) {
+          alert('Failed to save the duplicate — your browser storage may be full or unavailable.');
+          return;
+        }
         get().loadProject(copy);
       },
       loadProjectById: (id) => {

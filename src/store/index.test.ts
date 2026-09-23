@@ -239,6 +239,24 @@ describe('store: project lifecycle', () => {
     expect(useStore.getState().projectName).toBe('My Cabinets');
   });
 
+  it('alerts and keeps hasUnsavedChanges true when the save fails (e.g. storage quota)', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    const alertSpy = vi.fn();
+    vi.stubGlobal('alert', alertSpy);
+    vi.stubGlobal('localStorage', { ...localStorage, setItem: () => { throw new Error('quota'); } });
+
+    useStore.getState().saveProject();
+
+    expect(alertSpy).toHaveBeenCalled();
+    expect(useStore.getState().hasUnsavedChanges).toBe(true);
+  });
+
   it('duplicateProject saves a copy under a new id and switches to it', async () => {
     const useStore = await freshStore();
     useStore.getState().setProjectName('Original');
