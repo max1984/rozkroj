@@ -37,6 +37,10 @@ export function setActiveProjectId(id: string): void {
   localStorage.setItem(ACTIVE_ID_KEY, id);
 }
 
+export function clearActiveProjectId(): void {
+  localStorage.removeItem(ACTIVE_ID_KEY);
+}
+
 export function loadProjectFromLibrary(id: string): Project | null {
   try {
     const raw = localStorage.getItem(projectKey(id));

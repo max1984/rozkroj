@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  clearActiveProjectId,
   deleteProjectFromLibrary,
   getActiveProjectId,
   listProjects,
@@ -106,6 +107,19 @@ describe('setActiveProjectId / getActiveProjectId', () => {
   it('returns the id that was set', () => {
     setActiveProjectId('proj-42');
     expect(getActiveProjectId()).toBe('proj-42');
+  });
+});
+
+describe('clearActiveProjectId', () => {
+  it('removes the active project pointer', () => {
+    setActiveProjectId('proj-42');
+    clearActiveProjectId();
+    expect(getActiveProjectId()).toBeNull();
+  });
+
+  it('is a no-op when nothing was active', () => {
+    expect(() => clearActiveProjectId()).not.toThrow();
+    expect(getActiveProjectId()).toBeNull();
   });
 });
 

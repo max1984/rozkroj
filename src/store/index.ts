@@ -19,6 +19,7 @@ import {
   migrateLegacySingleProject,
   getActiveProjectId,
   setActiveProjectId,
+  clearActiveProjectId,
 } from '../utils/projectLibrary';
 
 interface AppState {
@@ -281,7 +282,12 @@ export const useStore = create<AppState>()(
       },
       deleteProjectById: (id) => {
         deleteProjectFromLibrary(id);
-        if (get().projectId === id) get().newProject();
+        if (get().projectId === id) {
+          // Otherwise the persisted active-project pointer keeps naming a
+          // project that no longer exists in the library.
+          clearActiveProjectId();
+          get().newProject();
+        }
       },
 
       addOffcut: (materialId, w, h) => {

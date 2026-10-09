@@ -372,6 +372,19 @@ describe('store: project lifecycle', () => {
     expect(useStore.getState().projectName).toBe('Keep me');
   });
 
+  it('deleteProjectById clears the persisted active-project pointer when deleting the active one', async () => {
+    const useStore = await freshStore();
+    const { getActiveProjectId } = await import('../utils/projectLibrary');
+    useStore.getState().saveProject();
+    const activeId = useStore.getState().projectId;
+
+    useStore.getState().deleteProjectById(activeId);
+
+    // Otherwise a later reload would resume with a pointer to a project
+    // that no longer exists in the library.
+    expect(getActiveProjectId()).not.toBe(activeId);
+  });
+
   // pastStates holds snapshots to revert *to*, so a piece only shows up in
   // history once a later change has pushed the state that contained it.
   function pastStatesMentionPiece(useStore: typeof UseStoreType, pieceName: string): boolean {
