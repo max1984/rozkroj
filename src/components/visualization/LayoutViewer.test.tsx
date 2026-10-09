@@ -72,6 +72,24 @@ describe('LayoutViewer', () => {
     expect((prevBtn as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('responds to Prev on the first click after the sheet count shrinks while viewing a later sheet', () => {
+    layout = { sheets: [sheet(), sheet({ sheetIndex: 1 }), sheet({ sheetIndex: 2 })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
+    const { rerender } = render(<LayoutViewer />);
+    const [, nextBtn] = screen.getAllByRole('button');
+    fireEvent.click(nextBtn);
+    fireEvent.click(nextBtn);
+    expect(screen.getByText('Sheet 3 / 3')).toBeTruthy();
+
+    // Fewer pieces now need only 2 sheets — the view clamps to the last one.
+    layout = { sheets: [sheet(), sheet({ sheetIndex: 1 })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
+    rerender(<LayoutViewer />);
+    expect(screen.getByText('Sheet 2 / 2')).toBeTruthy();
+
+    const [prevBtn] = screen.getAllByRole('button');
+    fireEvent.click(prevBtn);
+    expect(screen.getByText('Sheet 1 / 2')).toBeTruthy();
+  });
+
   it('shows the offcut badge only for a sheet sourced from an offcut', () => {
     layout = { sheets: [sheet({ sourceOffcutId: 'o1' })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
     render(<LayoutViewer />);

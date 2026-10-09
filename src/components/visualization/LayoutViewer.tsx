@@ -19,6 +19,11 @@ export function LayoutViewer() {
     );
   }
 
+  // Clamped against the raw sheetIdx state, which can go stale when the
+  // piece list shrinks the layout to fewer sheets while viewing a later one.
+  // Prev/Next below step from this clamped idx, not from sheetIdx directly —
+  // otherwise the first click after a shrink would still land on the same
+  // (already clamped) sheet, making the button look unresponsive.
   const idx = Math.min(sheetIdx, layout.sheets.length - 1);
   const sheet = layout.sheets[idx];
   const material = materials.find(m => m.id === sheet.materialId);
@@ -30,7 +35,7 @@ export function LayoutViewer() {
         <div className="flex items-center gap-2">
           <button
             disabled={idx === 0}
-            onClick={() => setSheetIdx(i => i - 1)}
+            onClick={() => setSheetIdx(idx - 1)}
             className="icon-btn !p-1"
             title={t.prevSheetTitle}
             aria-label={t.prevSheetTitle}
@@ -46,7 +51,7 @@ export function LayoutViewer() {
           </span>
           <button
             disabled={idx === layout.sheets.length - 1}
-            onClick={() => setSheetIdx(i => i + 1)}
+            onClick={() => setSheetIdx(idx + 1)}
             className="icon-btn !p-1"
             title={t.nextSheetTitle}
             aria-label={t.nextSheetTitle}
