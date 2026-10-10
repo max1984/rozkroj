@@ -284,6 +284,98 @@ describe('store: hasUnsavedChanges', () => {
     useStore.getState().newProject();
     expect(useStore.getState().hasUnsavedChanges).toBe(false);
   });
+
+  it(
+    'regression: becomes false again after undoing back to exactly the saved snapshot — previously the ' +
+      'subscriber flagged hasUnsavedChanges=true on ANY pastStates.length change, including the decrease from ' +
+      'Undo, so undoing a single edit right back to the saved state incorrectly left the project "dirty"',
+    async () => {
+      const useStore = await freshStore();
+      const materialId = useStore.getState().materials[0].id;
+      useStore.getState().saveProject();
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+      useStore.getState().addPiece({
+        name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+        grain: 'none', rotationAllowed: true, priority: false,
+        edgeBanding: { top: false, right: false, bottom: false, left: false },
+      });
+      expect(useStore.getState().hasUnsavedChanges).toBe(true);
+
+      useStore.temporal.getState().undo();
+      expect(useStore.getState().pieces).toHaveLength(0);
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+    }
+  );
+
+  it('redoing past the saved snapshot becomes true again', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().saveProject();
+
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    useStore.temporal.getState().undo();
+    expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+    useStore.temporal.getState().redo();
+    expect(useStore.getState().pieces).toHaveLength(1);
+    expect(useStore.getState().hasUnsavedChanges).toBe(true);
+  });
+
+  it(
+    'regression: still detects a new edit after history has saturated the 100-entry cap — a length-based ' +
+      'dirty check broke here because pastStates.length stops changing once zundo starts evicting the oldest ' +
+      'entry on every further push, even though the live data keeps changing',
+    async () => {
+      const useStore = await freshStore();
+      const materialId = useStore.getState().materials[0].id;
+      for (let i = 0; i < 100; i++) {
+        useStore.getState().addPiece({
+          name: `Piece ${i}`, materialId, width: 100, height: 100, quantity: 1,
+          grain: 'none', rotationAllowed: true, priority: false,
+          edgeBanding: { top: false, right: false, bottom: false, left: false },
+        });
+      }
+      expect(useStore.temporal.getState().pastStates).toHaveLength(100);
+
+      useStore.getState().saveProject();
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+      useStore.getState().addPiece({
+        name: 'One more', materialId, width: 50, height: 50, quantity: 1,
+        grain: 'none', rotationAllowed: true, priority: false,
+        edgeBanding: { top: false, right: false, bottom: false, left: false },
+      });
+      // Still capped at 100 (oldest entry evicted) — length alone can't tell
+      // this apart from "nothing changed".
+      expect(useStore.temporal.getState().pastStates).toHaveLength(100);
+      expect(useStore.getState().hasUnsavedChanges).toBe(true);
+    }
+  );
+
+  it('undoing only partway back to a two-edit history stays dirty (not yet back at the saved snapshot)', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().saveProject();
+
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    useStore.getState().addPiece({
+      name: 'Door', materialId, width: 200, height: 200, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    useStore.temporal.getState().undo();
+    expect(useStore.getState().pieces).toHaveLength(1);
+    expect(useStore.getState().hasUnsavedChanges).toBe(true);
+  });
 });
 
 describe('store: project lifecycle', () => {

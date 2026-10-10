@@ -117,6 +117,37 @@ function blankProject(language: Language, name?: string) {
   };
 }
 
+type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'algorithm' | 'projectName'>;
+
+// Same field selection as the temporal `partialize` option below (kept as
+// one function so the two can never drift apart).
+function undoTrackedFields(state: AppState): UndoTrackedFields {
+  return {
+    pieces: state.pieces,
+    materials: state.materials,
+    settings: state.settings,
+    algorithm: state.algorithm,
+    projectName: state.projectName,
+  };
+}
+
+// Snapshot of the tracked fields at the moment of the last save/load/new-
+// project — the hasUnsavedChanges subscriber below shallow-compares the
+// CURRENT tracked fields against this anchor instead of reacting to any
+// pastStates.length change. Reacting to length deltas (the previous
+// approach) broke two ways: (1) it couldn't tell Undo apart from a genuine
+// edit — undoing back to exactly the saved snapshot decreases
+// pastStates.length too, so it incorrectly re-flagged the project as dirty
+// right after the user had undone their way back to a state identical to
+// what's on disk; (2) once zundo's `limit: 100` below starts evicting the
+// oldest entry, pastStates.length saturates at 100 and stops changing even
+// as further edits happen, silently breaking dirty-detection altogether.
+// Comparing actual field references (all tracked fields are always replaced
+// wholesale, never mutated — see e.g. `pieces: [...state.pieces, ...]`
+// throughout this file) sidesteps both: it only cares whether the live data
+// matches what was saved, never how it got there or how deep the stack is.
+let savedSnapshot: UndoTrackedFields | null = null;
+
 export const useStore = create<AppState>()(
   temporal(
     (set, get) => ({
@@ -218,6 +249,7 @@ export const useStore = create<AppState>()(
           alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).saveFailed);
           return;
         }
+        savedSnapshot = undoTrackedFields(get());
         set({ hasUnsavedChanges: false });
       },
       loadProject: (project) => {
@@ -235,6 +267,7 @@ export const useStore = create<AppState>()(
         // Undo/redo history belongs to the project being edited — carrying it
         // across a switch would let Cmd+Z revert into a *different* project's data.
         useStore.temporal.getState().clear();
+        savedSnapshot = undoTrackedFields(get());
         // Must come after the set()/clear() above: both push/pop temporal
         // history, which the hasUnsavedChanges subscriber reacts to — setting
         // it last makes sure it isn't immediately flipped back to true.
@@ -261,6 +294,7 @@ export const useStore = create<AppState>()(
         const language = get().language;
         set({ ...blankProject(language, TRANSLATIONS[language]?.newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
         useStore.temporal.getState().clear();
+        savedSnapshot = undoTrackedFields(get());
         set({ hasUnsavedChanges: false });
         get().recomputeLayout();
       },
@@ -303,13 +337,7 @@ export const useStore = create<AppState>()(
     }),
     {
       // Only track pieces, materials, settings, algorithm in undo history
-      partialize: (state) => ({
-        pieces: state.pieces,
-        materials: state.materials,
-        settings: state.settings,
-        algorithm: state.algorithm,
-        projectName: state.projectName,
-      }),
+      partialize: undoTrackedFields,
       // Without this, every set() call — including ones that only touch
       // untracked fields like layout, selectedPieceId, or hoveredPieceId (so
       // on every hover!) — pushes a new history entry, since zundo otherwise
@@ -324,6 +352,11 @@ export const useStore = create<AppState>()(
   )
 );
 
+// Baseline anchor for a freshly created store (no explicit save/load yet) —
+// the blank project just spread into initial state above counts as "saved"
+// until the user actually edits it.
+savedSnapshot = undoTrackedFields(useStore.getState());
+
 // Resume the most recently active project on startup, migrating the old
 // single-project save into the library the first time this code runs.
 migrateLegacySingleProject();
@@ -334,11 +367,16 @@ if (activeId) {
 }
 
 // Any genuine edit to tracked project data (pieces, materials, settings,
-// algorithm, projectName) pushes a new undo-history entry — piggyback on
-// that to flag unsaved changes, since saving is manual (no autosave) and
+// algorithm, projectName) pushes/pops a temporal entry — piggyback on that
+// to recompute unsaved changes, since saving is manual (no autosave) and
 // there's otherwise nothing warning the user before they navigate away.
-useStore.temporal.subscribe((state, prevState) => {
-  if (state.pastStates.length !== prevState.pastStates.length) {
-    useStore.setState({ hasUnsavedChanges: true });
+// Shallow-compared against savedSnapshot (not reacting to the push/pop
+// itself) so that Undo/Redo landing back exactly on the saved snapshot
+// correctly clears the flag instead of only ever setting it — see the
+// comment on savedSnapshot above for why a pastStates.length check is wrong.
+useStore.temporal.subscribe(() => {
+  const dirty = savedSnapshot !== null && !shallow(undoTrackedFields(useStore.getState()), savedSnapshot);
+  if (dirty !== useStore.getState().hasUnsavedChanges) {
+    useStore.setState({ hasUnsavedChanges: dirty });
   }
 });
