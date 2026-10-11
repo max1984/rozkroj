@@ -78,10 +78,26 @@ interface AppState {
   loadProject: (project: Project) => void;
   exportProject: () => Project;
 
-  newProject: () => void;
-  duplicateProject: () => void;
-  loadProjectById: (id: string) => void;
+  // newProject/duplicateProject/loadProjectById all replace in-memory state
+  // outright, with no autosave — each returns false (without doing anything)
+  // instead of true if the user has unsaved changes and cancels the discard
+  // confirmation, so callers can skip whatever UI step (closing a dialog,
+  // refreshing a list) only makes sense once the switch actually happened.
+  // No skipConfirm escape hatch here on purpose: deleteProjectById's cascade
+  // (which legitimately needs to skip it — see there) resets project state
+  // directly through the private resetProject() helper instead, so this
+  // public action can't be called from a component to silently bypass the
+  // confirmation.
+  newProject: () => boolean;
+  duplicateProject: () => boolean;
+  loadProjectById: (id: string) => boolean;
   deleteProjectById: (id: string) => void;
+
+  // Exposed so call sites that replace in-memory project state outside of
+  // the three actions above (e.g. useSaveLoad's loadFromFile, loading from
+  // an exported file) can reuse the exact same check and wording instead of
+  // hand-rolling their own copy that can silently drift from it.
+  confirmDiscardUnsaved: (message?: string) => boolean;
 
   addOffcut: (materialId: string, w: number, h: number) => void;
   removeOffcut: (id: string) => void;
@@ -129,6 +145,38 @@ function undoTrackedFields(state: AppState): UndoTrackedFields {
     algorithm: state.algorithm,
     projectName: state.projectName,
   };
+}
+
+// Shared by newProject/duplicateProject/loadProjectById — each replaces the
+// whole in-memory project outright, with no autosave, so each needs this
+// same check before proceeding. Centralized here instead of (as before) at
+// every UI call site, so a future caller can't forget to add it. `message`
+// lets duplicateProject use its own wording — unlike New/Load, it doesn't
+// actually lose the edits (they end up in the new duplicate); it's the
+// ORIGINAL project's own saved copy that's left without them, which the
+// default "will be lost" message would misstate.
+function confirmDiscardUnsaved(get: () => AppState, message?: string): boolean {
+  if (!get().hasUnsavedChanges) return true;
+  // `message` is already the full string when provided (duplicateProject) —
+  // the TRANSLATIONS lookup only needs to happen in the fallback case, so it
+  // sits behind the `??` short-circuit instead of running unconditionally.
+  return confirm(message ?? (TRANSLATIONS[get().language] ?? TRANSLATIONS.en).unsavedChangesConfirm);
+}
+
+// Resets in-memory project state to a blank project, with NO confirmation
+// check — callers are responsible for confirming first (newProject) or for
+// being a context where confirming again would be redundant
+// (deleteProjectById's cascade). Deliberately not exposed on AppState: the
+// only way to skip the confirmation is to go through deleteProjectById's own
+// "are you sure you want to delete this?" prompt, not a public option that
+// any future component could pass without the user ever being asked.
+function resetProject(set: (partial: Partial<AppState>) => void, get: () => AppState): void {
+  const language = get().language;
+  set({ ...blankProject(language, TRANSLATIONS[language]?.newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
+  useStore.temporal.getState().clear();
+  savedSnapshot = undoTrackedFields(get());
+  set({ hasUnsavedChanges: false });
+  get().recomputeLayout();
 }
 
 // Snapshot of the tracked fields at the moment of the last save/load/new-
@@ -291,38 +339,44 @@ export const useStore = create<AppState>()(
       },
 
       newProject: () => {
-        const language = get().language;
-        set({ ...blankProject(language, TRANSLATIONS[language]?.newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
-        useStore.temporal.getState().clear();
-        savedSnapshot = undoTrackedFields(get());
-        set({ hasUnsavedChanges: false });
-        get().recomputeLayout();
+        if (!confirmDiscardUnsaved(get)) return false;
+        resetProject(set, get);
+        return true;
       },
       duplicateProject: () => {
-        const project = get().exportProject();
         const t = TRANSLATIONS[get().language] ?? TRANSLATIONS.en;
+        if (!confirmDiscardUnsaved(get, t.duplicateUnsavedChangesConfirm)) return false;
+        const project = get().exportProject();
         const copy: Project = { ...project, id: nanoid(), name: t.duplicateSuffix(project.name), createdAt: Date.now(), updatedAt: Date.now() };
         if (!saveProjectToLibrary(copy)) {
-          alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).duplicateSaveFailed);
-          return;
+          alert(t.duplicateSaveFailed);
+          return false;
         }
         get().loadProject(copy);
+        return true;
       },
       loadProjectById: (id) => {
+        if (!confirmDiscardUnsaved(get)) return false;
         const project = loadProjectFromLibrary(id);
-        if (!project) return;
+        if (!project) return false;
         setActiveProjectId(id);
         get().loadProject(project);
+        return true;
       },
       deleteProjectById: (id) => {
         deleteProjectFromLibrary(id);
         if (get().projectId === id) {
           // Otherwise the persisted active-project pointer keeps naming a
-          // project that no longer exists in the library.
+          // project that no longer exists in the library. Goes through
+          // resetProject() directly rather than newProject(): deleting the
+          // active project already asked its own "are you sure?" (see
+          // ProjectLibrary.tsx), and whatever was unsaved on it is moot once
+          // it's gone, so it must not ask again here.
           clearActiveProjectId();
-          get().newProject();
+          resetProject(set, get);
         }
       },
+      confirmDiscardUnsaved: (message) => confirmDiscardUnsaved(get, message),
 
       addOffcut: (materialId, w, h) => {
         set(state => ({

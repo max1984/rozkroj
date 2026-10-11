@@ -6,14 +6,14 @@ export function useSaveLoad() {
   const { t } = useTranslation();
   const saveProject = useStore(s => s.saveProject);
   const loadProject = useStore(s => s.loadProject);
-  const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
+  const confirmDiscardUnsaved = useStore(s => s.confirmDiscardUnsaved);
 
   const save = () => {
     saveProject();
   };
 
   const loadFromFile = (file: File) => {
-    if (hasUnsavedChanges && !confirm(t.unsavedChangesConfirm)) return;
+    if (!confirmDiscardUnsaved()) return;
     const reader = new FileReader();
     reader.onload = (e) => {
       try {

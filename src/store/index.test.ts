@@ -13,6 +13,13 @@ async function freshStore(): Promise<typeof UseStoreType> {
   // whatever machine runs them (e.g. 'pl-PL'), making default-language
   // assertions pass or fail depending on where the suite runs.
   vi.stubGlobal('navigator', { language: 'en-US' });
+  // jsdom doesn't implement window.confirm at all (ReferenceError, not just
+  // a no-op) — newProject/duplicateProject/loadProjectById all call it when
+  // there are unsaved changes. Defaulting to "confirmed" here matches this
+  // suite's pre-existing behavior (most tests don't care about the discard
+  // prompt and just want the action to proceed); tests that DO care stub
+  // their own 'confirm' afterward, which overrides this default.
+  vi.stubGlobal('confirm', () => true);
   const mod = await import('./index');
   return mod.useStore;
 }
@@ -440,6 +447,150 @@ describe('store: project lifecycle', () => {
     const state = useStore.getState();
     expect(state.projectId).not.toBe(originalId);
     expect(state.projectName).toBe('Original (copy)');
+  });
+
+  // newProject/duplicateProject/loadProjectById each replace the whole
+  // in-memory project outright, with no autosave — this used to be guarded
+  // at each UI call site (ProjectLibrary.tsx) individually, which meant a
+  // future caller could forget to add the same check. Moved here, into the
+  // actions themselves, so it can't be skipped — except by deliberately
+  // passing skipConfirm (see deleteProjectById's own cascade test below).
+  describe('discard-unsaved-changes confirmation', () => {
+    it('newProject returns false and leaves the project untouched when the user cancels the confirmation', async () => {
+      const useStore = await freshStore();
+      addTestPiece(useStore, 'Shelf');
+      const confirmSpy = vi.fn(() => false);
+      vi.stubGlobal('confirm', confirmSpy);
+
+      const result = useStore.getState().newProject();
+
+      expect(result).toBe(false);
+      expect(confirmSpy).toHaveBeenCalled();
+      expect(useStore.getState().pieces).toHaveLength(1);
+    });
+
+    it('newProject proceeds and returns true when the user confirms', async () => {
+      const useStore = await freshStore();
+      addTestPiece(useStore, 'Shelf');
+      vi.stubGlobal('confirm', vi.fn(() => true));
+
+      const result = useStore.getState().newProject();
+
+      expect(result).toBe(true);
+      expect(useStore.getState().pieces).toHaveLength(0);
+    });
+
+    it('newProject does not ask for confirmation when there are no unsaved changes', async () => {
+      const useStore = await freshStore();
+      const confirmSpy = vi.fn();
+      vi.stubGlobal('confirm', confirmSpy);
+
+      const result = useStore.getState().newProject();
+
+      expect(result).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it('duplicateProject returns false and creates no copy when the user cancels the confirmation', async () => {
+      const useStore = await freshStore();
+      addTestPiece(useStore, 'Shelf');
+      const originalId = useStore.getState().projectId;
+      vi.stubGlobal('confirm', vi.fn(() => false));
+
+      const result = useStore.getState().duplicateProject();
+
+      expect(result).toBe(false);
+      expect(useStore.getState().projectId).toBe(originalId);
+    });
+
+    it(
+      "duplicateProject's confirmation message is distinct from newProject/loadProjectById's — unlike " +
+        "those two, it doesn't actually lose the edits (they end up in the new duplicate); it's the " +
+        "ORIGINAL project's own saved copy that's left without them",
+      async () => {
+        const useStore = await freshStore();
+        addTestPiece(useStore, 'Shelf');
+        const confirmSpy = vi.fn(() => false);
+        vi.stubGlobal('confirm', confirmSpy);
+
+        useStore.getState().duplicateProject();
+
+        expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("won't be saved to this project"));
+      }
+    );
+
+    it('duplicateProject does not ask for confirmation when there are no unsaved changes', async () => {
+      const useStore = await freshStore();
+      const confirmSpy = vi.fn();
+      vi.stubGlobal('confirm', confirmSpy);
+
+      const result = useStore.getState().duplicateProject();
+
+      expect(result).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it('loadProjectById returns false and leaves the project untouched when the user cancels the confirmation', async () => {
+      const useStore = await freshStore();
+      useStore.getState().saveProject();
+      const savedId = useStore.getState().projectId;
+      useStore.getState().newProject();
+      addTestPiece(useStore, 'Shelf');
+      vi.stubGlobal('confirm', vi.fn(() => false));
+
+      const result = useStore.getState().loadProjectById(savedId);
+
+      expect(result).toBe(false);
+      expect(useStore.getState().projectId).not.toBe(savedId);
+      expect(useStore.getState().pieces).toHaveLength(1);
+    });
+
+    it('loadProjectById does not ask for confirmation when there are no unsaved changes', async () => {
+      const useStore = await freshStore();
+      useStore.getState().saveProject();
+      const savedId = useStore.getState().projectId;
+      const confirmSpy = vi.fn();
+      vi.stubGlobal('confirm', confirmSpy);
+
+      const result = useStore.getState().loadProjectById(savedId);
+
+      expect(result).toBe(true);
+      expect(confirmSpy).not.toHaveBeenCalled();
+    });
+
+    it(
+      "deleteProjectById resetting in-memory state when deleting the active project does not ask for the " +
+        'discard-unsaved-changes confirmation a second time — the user already confirmed deletion itself ' +
+        '(ProjectLibrary.tsx), and whatever was unsaved on the now-deleted project is moot',
+      async () => {
+        const useStore = await freshStore();
+        useStore.getState().saveProject();
+        const activeId = useStore.getState().projectId;
+        addTestPiece(useStore, 'Shelf'); // leaves hasUnsavedChanges true
+        const confirmSpy = vi.fn(() => false); // would block a non-skipped confirm
+        vi.stubGlobal('confirm', confirmSpy);
+
+        useStore.getState().deleteProjectById(activeId);
+
+        expect(confirmSpy).not.toHaveBeenCalled();
+        expect(useStore.getState().projectId).not.toBe(activeId);
+      }
+    );
+
+    it(
+      'confirmDiscardUnsaved is exposed directly on the store so callers outside newProject/duplicateProject/' +
+        'loadProjectById (e.g. useSaveLoad loading from an exported file) can reuse the same check instead of ' +
+        'hand-rolling their own copy',
+      async () => {
+        const useStore = await freshStore();
+        addTestPiece(useStore, 'Shelf');
+        const confirmSpy = vi.fn(() => false);
+        vi.stubGlobal('confirm', confirmSpy);
+
+        expect(useStore.getState().confirmDiscardUnsaved()).toBe(false);
+        expect(confirmSpy).toHaveBeenCalled();
+      }
+    );
   });
 
   it('deleteProjectById resets to a new project when deleting the currently active one', async () => {

@@ -4,19 +4,25 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ProjectLibrary } from './ProjectLibrary';
 import type { LibraryEntry } from '../../utils/projectLibrary';
 
-const newProject = vi.fn();
-const duplicateProject = vi.fn();
-const loadProjectById = vi.fn();
+// newProject/duplicateProject/loadProjectById now return a boolean
+// themselves (store/index.ts) — false means "the user had unsaved changes
+// and cancelled the discard confirmation, nothing happened." The component
+// no longer does that check itself; it just has to react correctly to the
+// return value, which is what these mocks (and the tests below) exercise.
+// The confirm-dialog behavior itself is tested at the store level now
+// (store/index.test.ts), not here.
+const newProject = vi.fn(() => true);
+const duplicateProject = vi.fn(() => true);
+const loadProjectById = vi.fn(() => true);
 const deleteProjectById = vi.fn();
 const saveProject = vi.fn();
 let projectId = 'active-id';
-let hasUnsavedChanges = false;
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: {
-    projectId: string; hasUnsavedChanges: boolean; newProject: typeof newProject; duplicateProject: typeof duplicateProject;
+    projectId: string; newProject: typeof newProject; duplicateProject: typeof duplicateProject;
     loadProjectById: typeof loadProjectById; deleteProjectById: typeof deleteProjectById; saveProject: typeof saveProject;
-  }) => unknown) => selector({ projectId, hasUnsavedChanges, newProject, duplicateProject, loadProjectById, deleteProjectById, saveProject }),
+  }) => unknown) => selector({ projectId, newProject, duplicateProject, loadProjectById, deleteProjectById, saveProject }),
 }));
 
 let entries: LibraryEntry[] = [];
@@ -29,9 +35,11 @@ vi.mock('../../utils/projectLibrary', () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  newProject.mockReturnValue(true);
+  duplicateProject.mockReturnValue(true);
+  loadProjectById.mockReturnValue(true);
   entries = [];
   projectId = 'active-id';
-  hasUnsavedChanges = false;
 });
 
 describe('ProjectLibrary', () => {
@@ -64,6 +72,22 @@ describe('ProjectLibrary', () => {
     expect(screen.queryByText('Bathroom')).toBeNull();
   });
 
+  it(
+    'does not close the dialog when loadProjectById() returns false — e.g. the user had unsaved changes ' +
+      'and cancelled the discard confirmation inside the store',
+    () => {
+      loadProjectById.mockReturnValue(false);
+      entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
+      render(<ProjectLibrary />);
+      fireEvent.click(screen.getByTitle('Project library'));
+
+      fireEvent.click(screen.getByText('Bathroom'));
+
+      expect(loadProjectById).toHaveBeenCalledWith('other-id');
+      expect(screen.getByText('Bathroom')).toBeTruthy();
+    }
+  );
+
   it('deletes a project without loading it, after the user confirms', () => {
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
     entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
@@ -90,46 +114,6 @@ describe('ProjectLibrary', () => {
     confirmSpy.mockRestore();
   });
 
-  it('asks for confirmation before creating a new project when there are unsaved changes', () => {
-    hasUnsavedChanges = true;
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    render(<ProjectLibrary />);
-    fireEvent.click(screen.getByTitle('Project library'));
-
-    fireEvent.click(screen.getByText('New'));
-
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(newProject).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
-
-  it('asks for confirmation before loading a different project when there are unsaved changes', () => {
-    hasUnsavedChanges = true;
-    entries = [{ id: 'other-id', name: 'Bathroom', updatedAt: Date.now() }];
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    render(<ProjectLibrary />);
-    fireEvent.click(screen.getByTitle('Project library'));
-
-    fireEvent.click(screen.getByText('Bathroom'));
-
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(loadProjectById).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
-  });
-
-  it('does not ask for confirmation when there are no unsaved changes', () => {
-    hasUnsavedChanges = false;
-    const confirmSpy = vi.spyOn(window, 'confirm');
-    render(<ProjectLibrary />);
-    fireEvent.click(screen.getByTitle('Project library'));
-
-    fireEvent.click(screen.getByText('New'));
-
-    expect(confirmSpy).not.toHaveBeenCalled();
-    expect(newProject).toHaveBeenCalledTimes(1);
-    confirmSpy.mockRestore();
-  });
-
   it('creates a new project and closes the dialog', () => {
     render(<ProjectLibrary />);
     fireEvent.click(screen.getByTitle('Project library'));
@@ -139,6 +123,21 @@ describe('ProjectLibrary', () => {
     expect(newProject).toHaveBeenCalledTimes(1);
     expect(screen.queryByText('Projects')).toBeNull();
   });
+
+  it(
+    'keeps the dialog open and does not refresh when newProject() returns false — e.g. the user had ' +
+      'unsaved changes and cancelled the discard confirmation inside the store',
+    () => {
+      newProject.mockReturnValue(false);
+      render(<ProjectLibrary />);
+      fireEvent.click(screen.getByTitle('Project library'));
+
+      fireEvent.click(screen.getByText('New'));
+
+      expect(newProject).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Projects')).toBeTruthy();
+    }
+  );
 
   it('saves the current project and keeps the dialog open', () => {
     render(<ProjectLibrary />);
@@ -161,35 +160,17 @@ describe('ProjectLibrary', () => {
   });
 
   it(
-    'asks for confirmation before duplicating when there are unsaved changes, with a message distinct from ' +
-      'New/Load — duplicateProject() ends by switching the active project (loadProject(copy)) just like ' +
-      '"New"/loading another entry, so it carries an analogous risk, but NOT the identical one: the edits ' +
-      "themselves survive in the new duplicate, it's only the ORIGINAL project's own saved copy that's left " +
-      'without them, which the shared "will be lost" wording would misstate',
+    'keeps the dialog open and does not refresh when duplicateProject() returns false — e.g. the user had ' +
+      'unsaved changes and cancelled the discard confirmation inside the store',
     () => {
-      hasUnsavedChanges = true;
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      duplicateProject.mockReturnValue(false);
       render(<ProjectLibrary />);
       fireEvent.click(screen.getByTitle('Project library'));
 
       fireEvent.click(screen.getByText('Duplicate'));
 
-      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("won't be saved to this project"));
-      expect(duplicateProject).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
+      expect(duplicateProject).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Projects')).toBeTruthy();
     }
   );
-
-  it('does not ask for confirmation before duplicating when there are no unsaved changes', () => {
-    hasUnsavedChanges = false;
-    const confirmSpy = vi.spyOn(window, 'confirm');
-    render(<ProjectLibrary />);
-    fireEvent.click(screen.getByTitle('Project library'));
-
-    fireEvent.click(screen.getByText('Duplicate'));
-
-    expect(confirmSpy).not.toHaveBeenCalled();
-    expect(duplicateProject).toHaveBeenCalledTimes(1);
-    confirmSpy.mockRestore();
-  });
 });

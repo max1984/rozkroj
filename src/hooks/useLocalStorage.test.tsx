@@ -5,11 +5,17 @@ import { useSaveLoad } from './useLocalStorage';
 
 const saveProject = vi.fn();
 const loadProject = vi.fn();
-let hasUnsavedChanges = false;
+// loadFromFile defers to the store's own confirmDiscardUnsaved() action
+// (store/index.ts) instead of reading hasUnsavedChanges + calling confirm()
+// itself — this mock exercises exactly that boundary, the same way
+// ProjectLibrary.test.tsx mocks newProject/duplicateProject/loadProjectById's
+// boolean return values instead of re-testing the confirmation dialog here.
+const confirmDiscardUnsaved = vi.fn(() => true);
 
 vi.mock('../store', () => {
-  const useStore = (selector: (s: { saveProject: typeof saveProject; loadProject: typeof loadProject; hasUnsavedChanges: boolean }) => unknown) =>
-    selector({ saveProject, loadProject, hasUnsavedChanges });
+  const useStore = (selector: (s: {
+    saveProject: typeof saveProject; loadProject: typeof loadProject; confirmDiscardUnsaved: typeof confirmDiscardUnsaved;
+  }) => unknown) => selector({ saveProject, loadProject, confirmDiscardUnsaved });
   useStore.getState = () => ({ exportProject: vi.fn(() => ({ name: 'My Project' })) });
   return { useStore };
 });
@@ -21,35 +27,22 @@ vi.mock('../utils/migrateProject', () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
-  hasUnsavedChanges = false;
+  confirmDiscardUnsaved.mockReturnValue(true);
 });
 
 describe('useSaveLoad.loadFromFile', () => {
-  it('loads the parsed project when there are no unsaved changes', async () => {
+  it('loads the parsed project when confirmDiscardUnsaved() returns true', async () => {
     const { result } = renderHook(() => useSaveLoad());
     const file = new File([JSON.stringify({ name: 'Imported' })], 'p.rozkroj.json', { type: 'application/json' });
 
     result.current.loadFromFile(file);
 
+    expect(confirmDiscardUnsaved).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => expect(loadProject).toHaveBeenCalledWith({ name: 'Imported' }));
   });
 
-  it('asks for confirmation before loading when there are unsaved changes, and loads if confirmed', async () => {
-    hasUnsavedChanges = true;
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-    const { result } = renderHook(() => useSaveLoad());
-    const file = new File([JSON.stringify({ name: 'Imported' })], 'p.rozkroj.json', { type: 'application/json' });
-
-    result.current.loadFromFile(file);
-
-    expect(confirmSpy).toHaveBeenCalled();
-    await vi.waitFor(() => expect(loadProject).toHaveBeenCalledWith({ name: 'Imported' }));
-    confirmSpy.mockRestore();
-  });
-
-  it('does not read or load the file when the user cancels the confirmation', () => {
-    hasUnsavedChanges = true;
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  it('does not read or load the file when confirmDiscardUnsaved() returns false', () => {
+    confirmDiscardUnsaved.mockReturnValue(false);
     const { result } = renderHook(() => useSaveLoad());
     const file = new File([JSON.stringify({ name: 'Imported' })], 'p.rozkroj.json', { type: 'application/json' });
 
@@ -57,7 +50,6 @@ describe('useSaveLoad.loadFromFile', () => {
 
     // Cancelling short-circuits before the (async) FileReader is even started.
     expect(loadProject).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it('alerts on invalid JSON instead of throwing', async () => {

@@ -10,7 +10,6 @@ export function ProjectLibrary() {
   const [open, setOpen] = useState(false);
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
   const projectId = useStore(s => s.projectId);
-  const hasUnsavedChanges = useStore(s => s.hasUnsavedChanges);
   const newProject = useStore(s => s.newProject);
   const duplicateProject = useStore(s => s.duplicateProject);
   const loadProjectById = useStore(s => s.loadProjectById);
@@ -18,15 +17,6 @@ export function ProjectLibrary() {
   const saveProject = useStore(s => s.saveProject);
 
   const refresh = () => setEntries(listProjects());
-
-  // Switching or creating a project replaces in-memory state outright — with
-  // no autosave, that silently discards anything not yet saved. Duplicate
-  // gets its own message (duplicateUnsavedChangesConfirm): unlike New/Load,
-  // it doesn't actually lose the edits — they end up in the new duplicate —
-  // it's the ORIGINAL project's own saved copy that's left without them, a
-  // different enough risk that "will be lost" would be simply wrong there.
-  const confirmDiscardUnsaved = (message: string = t.unsavedChangesConfirm) =>
-    !hasUnsavedChanges || confirm(message);
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>
@@ -56,8 +46,13 @@ export function ProjectLibrary() {
             </button>
             <button
               onClick={() => {
-                if (!confirmDiscardUnsaved()) return;
-                newProject(); refresh(); setOpen(false);
+                // newProject() itself now checks for unsaved changes and
+                // confirms before discarding them (store/index.ts) — it
+                // returns false without doing anything if the user cancels,
+                // so refresh/close only happen once the switch actually
+                // happened.
+                if (!newProject()) return;
+                refresh(); setOpen(false);
               }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
@@ -65,15 +60,14 @@ export function ProjectLibrary() {
             </button>
             <button
               onClick={() => {
-                // duplicateProject() ends by calling loadProject(copy) (see
-                // store/index.ts) — the exact same in-memory-state-replacing
-                // call that "New"/loading another entry already guard with
-                // confirmDiscardUnsaved() above (see its own comment for
-                // why Duplicate needs the same guard with a different
-                // message). Also closes the dialog, matching New/Load —
-                // the active project just switched underneath it.
-                if (!confirmDiscardUnsaved(t.duplicateUnsavedChangesConfirm)) return;
-                duplicateProject(); refresh(); setOpen(false);
+                // Same shape as New above — duplicateProject() checks for
+                // unsaved changes itself now (with its own, more accurate
+                // message: unlike New/Load, it doesn't actually lose the
+                // edits, they end up in the new duplicate — it's the
+                // ORIGINAL project's own saved copy that's left without
+                // them).
+                if (!duplicateProject()) return;
+                refresh(); setOpen(false);
               }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
@@ -94,8 +88,8 @@ export function ProjectLibrary() {
                 >
                   <button
                     onClick={() => {
-                      if (!confirmDiscardUnsaved()) return;
-                      loadProjectById(entry.id); setOpen(false);
+                      if (!loadProjectById(entry.id)) return;
+                      setOpen(false);
                     }}
                     className="flex-1 min-w-0 text-left"
                   >
