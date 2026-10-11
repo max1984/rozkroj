@@ -16,10 +16,25 @@ export function OffcutStock() {
     sh.freeRects.map(r => ({ ...r, materialId: sh.materialId }))
   ) ?? [];
   // Re-clicking "Save offcuts" without the layout changing would otherwise
-  // re-add the same physical scrap as new stock entries every time.
-  const newOffcutsFromLayout = offcutsFromLayout.filter(r =>
-    !offcutStock.some(o => o.materialId === r.materialId && o.width === r.width && o.height === r.height)
-  );
+  // re-add the same physical scrap as new stock entries every time. Matching
+  // must be count-based, not mere existence: two different sheets can each
+  // leave an offcut of the same size, and if only one of those same-size
+  // offcuts was saved before, the other is still genuinely new scrap.
+  const offcutKey = (materialId: string, width: number, height: number) => `${materialId}|${width}|${height}`;
+  const remainingSavedCounts = new Map<string, number>();
+  for (const o of offcutStock) {
+    const key = offcutKey(o.materialId, o.width, o.height);
+    remainingSavedCounts.set(key, (remainingSavedCounts.get(key) ?? 0) + 1);
+  }
+  const newOffcutsFromLayout = offcutsFromLayout.filter(r => {
+    const key = offcutKey(r.materialId, r.width, r.height);
+    const saved = remainingSavedCounts.get(key) ?? 0;
+    if (saved > 0) {
+      remainingSavedCounts.set(key, saved - 1);
+      return false;
+    }
+    return true;
+  });
 
   const materialName = (id: string) => materials.find(m => m.id === id)?.name;
 

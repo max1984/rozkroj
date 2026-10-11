@@ -98,6 +98,25 @@ describe('OffcutStock', () => {
     expect(screen.queryByText('Save offcuts')).toBeNull();
   });
 
+  it('still offers a same-size free rect as new when only one of two identical-size rects was saved', () => {
+    // Two different sheets can each leave behind an offcut of the same size —
+    // matching on dimensions alone (ignoring how many are already saved) would
+    // wrongly treat the second, genuinely-unsaved offcut as a duplicate of the
+    // first and silently drop it instead of offering it.
+    offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
+    layout = {
+      sheets: [
+        sheet({ freeRects: [{ x: 0, y: 0, width: 300, height: 200 }] }),
+        sheet({ sheetIndex: 1, materialId: 'm1', freeRects: [{ x: 0, y: 0, width: 300, height: 200 }] }),
+      ],
+      unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0,
+    };
+    render(<OffcutStock />);
+    fireEvent.click(screen.getByText('Save offcuts'));
+    expect(addOffcut).toHaveBeenCalledTimes(1);
+    expect(addOffcut).toHaveBeenCalledWith('m1', 300, 200);
+  });
+
   it('exposes an accessible name for the icon-only remove button', () => {
     offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
     render(<OffcutStock />);
