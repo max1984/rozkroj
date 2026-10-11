@@ -133,6 +133,7 @@ export interface Translations {
 
   // Alerts / confirms
   unsavedChangesConfirm: string;
+  duplicateUnsavedChangesConfirm: string;
   deleteProjectConfirm: (name: string) => string;
   saveFailed: string;
   duplicateSaveFailed: string;

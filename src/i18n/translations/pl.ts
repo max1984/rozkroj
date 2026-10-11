@@ -149,6 +149,7 @@ export const pl: Translations = {
 
   // Alerts / confirms
   unsavedChangesConfirm: 'Masz niezapisane zmiany, które zostaną utracone. Kontynuować?',
+  duplicateUnsavedChangesConfirm: 'Masz niezapisane zmiany. Zostaną uwzględnione w duplikacie, ale nie zostaną zapisane w tym projekcie, jeśli najpierw go nie zapiszesz. Kontynuować?',
   deleteProjectConfirm: (name) => `Usunąć „${name}"? Tej operacji nie można cofnąć.`,
   saveFailed: 'Nie udało się zapisać — pamięć przeglądarki może być pełna lub niedostępna.',
   duplicateSaveFailed: 'Nie udało się zapisać duplikatu — pamięć przeglądarki może być pełna lub niedostępna.',

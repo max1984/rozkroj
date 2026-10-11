@@ -131,6 +131,7 @@ export const de: Translations = {
 
   // Alerts / confirms
   unsavedChangesConfirm: 'Sie haben ungespeicherte Änderungen, die verloren gehen. Fortfahren?',
+  duplicateUnsavedChangesConfirm: 'Sie haben ungespeicherte Änderungen. Sie werden in das Duplikat übernommen, aber nicht in diesem Projekt gespeichert, wenn Sie es nicht zuerst speichern. Fortfahren?',
   deleteProjectConfirm: (name) => `„${name}" löschen? Dies kann nicht rückgängig gemacht werden.`,
   saveFailed: 'Speichern fehlgeschlagen — der Browserspeicher ist möglicherweise voll oder nicht verfügbar.',
   duplicateSaveFailed: 'Speichern des Duplikats fehlgeschlagen — der Browserspeicher ist möglicherweise voll oder nicht verfügbar.',

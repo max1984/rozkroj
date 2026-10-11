@@ -150,12 +150,46 @@ describe('ProjectLibrary', () => {
     expect(screen.getByText('Projects')).toBeTruthy();
   });
 
-  it('duplicates the current project', () => {
+  it('duplicates the current project and closes the dialog, matching New/Load — the active project just switched', () => {
     render(<ProjectLibrary />);
     fireEvent.click(screen.getByTitle('Project library'));
 
     fireEvent.click(screen.getByText('Duplicate'));
 
     expect(duplicateProject).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Projects')).toBeNull();
+  });
+
+  it(
+    'asks for confirmation before duplicating when there are unsaved changes, with a message distinct from ' +
+      'New/Load — duplicateProject() ends by switching the active project (loadProject(copy)) just like ' +
+      '"New"/loading another entry, so it carries an analogous risk, but NOT the identical one: the edits ' +
+      "themselves survive in the new duplicate, it's only the ORIGINAL project's own saved copy that's left " +
+      'without them, which the shared "will be lost" wording would misstate',
+    () => {
+      hasUnsavedChanges = true;
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+      render(<ProjectLibrary />);
+      fireEvent.click(screen.getByTitle('Project library'));
+
+      fireEvent.click(screen.getByText('Duplicate'));
+
+      expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("won't be saved to this project"));
+      expect(duplicateProject).not.toHaveBeenCalled();
+      confirmSpy.mockRestore();
+    }
+  );
+
+  it('does not ask for confirmation before duplicating when there are no unsaved changes', () => {
+    hasUnsavedChanges = false;
+    const confirmSpy = vi.spyOn(window, 'confirm');
+    render(<ProjectLibrary />);
+    fireEvent.click(screen.getByTitle('Project library'));
+
+    fireEvent.click(screen.getByText('Duplicate'));
+
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(duplicateProject).toHaveBeenCalledTimes(1);
+    confirmSpy.mockRestore();
   });
 });

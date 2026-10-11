@@ -131,6 +131,7 @@ export const en: Translations = {
 
   // Alerts / confirms
   unsavedChangesConfirm: 'You have unsaved changes that will be lost. Continue?',
+  duplicateUnsavedChangesConfirm: "You have unsaved changes. They'll be included in the duplicate, but won't be saved to this project unless you save it first. Continue?",
   deleteProjectConfirm: (name) => `Delete "${name}"? This cannot be undone.`,
   saveFailed: 'Failed to save — your browser storage may be full or unavailable.',
   duplicateSaveFailed: 'Failed to save the duplicate — your browser storage may be full or unavailable.',

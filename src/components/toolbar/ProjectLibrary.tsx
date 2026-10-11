@@ -20,9 +20,13 @@ export function ProjectLibrary() {
   const refresh = () => setEntries(listProjects());
 
   // Switching or creating a project replaces in-memory state outright — with
-  // no autosave, that silently discards anything not yet saved.
-  const confirmDiscardUnsaved = () =>
-    !hasUnsavedChanges || confirm(t.unsavedChangesConfirm);
+  // no autosave, that silently discards anything not yet saved. Duplicate
+  // gets its own message (duplicateUnsavedChangesConfirm): unlike New/Load,
+  // it doesn't actually lose the edits — they end up in the new duplicate —
+  // it's the ORIGINAL project's own saved copy that's left without them, a
+  // different enough risk that "will be lost" would be simply wrong there.
+  const confirmDiscardUnsaved = (message: string = t.unsavedChangesConfirm) =>
+    !hasUnsavedChanges || confirm(message);
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { setOpen(v); if (v) refresh(); }}>
@@ -60,7 +64,17 @@ export function ProjectLibrary() {
               <Plus size={13} /> {t.newProject}
             </button>
             <button
-              onClick={() => { duplicateProject(); refresh(); }}
+              onClick={() => {
+                // duplicateProject() ends by calling loadProject(copy) (see
+                // store/index.ts) — the exact same in-memory-state-replacing
+                // call that "New"/loading another entry already guard with
+                // confirmDiscardUnsaved() above (see its own comment for
+                // why Duplicate needs the same guard with a different
+                // message). Also closes the dialog, matching New/Load —
+                // the active project just switched underneath it.
+                if (!confirmDiscardUnsaved(t.duplicateUnsavedChangesConfirm)) return;
+                duplicateProject(); refresh(); setOpen(false);
+              }}
               className="flex items-center gap-1 rounded-md border border-line px-2.5 py-1.5 text-xs hover:bg-surface-2"
             >
               <Copy size={13} /> {t.duplicateProject}
