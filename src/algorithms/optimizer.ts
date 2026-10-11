@@ -107,13 +107,28 @@ interface Bin {
   sourceOffcutId?: string;
 }
 
-/** Offcuts are tried first (smallest first, to use up scraps before larger stock), then fresh full sheets. */
+/** Whether an (empty) offcut is big enough to hold this piece at all, in either orientation if rotation is allowed. */
+function offcutFits(o: OffcutItem, inst: PieceInstance, kerf: number): boolean {
+  const w = inst.width + kerf;
+  const h = inst.height + kerf;
+  if (o.width >= w && o.height >= h) return true;
+  return inst.rotationAllowed && o.width >= h && o.height >= w;
+}
+
+/**
+ * Offcuts are tried first (smallest-fitting first, to use up scraps before larger stock), then
+ * fresh full sheets. Each call picks a bin for a specific piece instance — an offcut too small
+ * for THIS instance is left in the pool rather than discarded, since a later, smaller instance
+ * may still fit it. Without this, pieces are processed largest-first, so the very offcut most
+ * likely to be "skipped for now" (a small one) was also the one most likely to actually fit a
+ * piece that only came up later — and it was gone forever by then.
+ */
 function makeBinSupplier(material: MaterialStock, offcuts: OffcutItem[], settings: CuttingSettings) {
-  const queue = [...offcuts].sort((a, b) => a.width * a.height - b.width * b.height);
-  let i = 0;
-  return (): Bin => {
-    if (i < queue.length) {
-      const o = queue[i++];
+  const available = [...offcuts].sort((a, b) => a.width * a.height - b.width * b.height);
+  return (inst: PieceInstance): Bin => {
+    const idx = available.findIndex(o => offcutFits(o, inst, settings.sawKerf));
+    if (idx !== -1) {
+      const o = available.splice(idx, 1)[0];
       return { size: { label: o.label, width: o.width, height: o.height }, trim: 0, sourceOffcutId: o.id };
     }
     return { size: material.size, trim: settings.freshEdge ? settings.freshEdgeTrim : 0 };
@@ -131,15 +146,20 @@ function packMaterial(
   const instances = expandPieces(pieces);
   const unplaced: { definitionId: string; instanceIndex: number }[] = [];
   const sheets: SheetLayout[] = [];
+
+  if (instances.length === 0) {
+    return { sheets, unplaced, nextIndex: startSheetIndex };
+  }
+
   const nextBin = makeBinSupplier(material, offcuts, settings);
 
-  let bin = nextBin();
+  let bin = nextBin(instances[0]);
   let freeRects: FreeRect[] = initFreeRects(bin.size, bin.trim);
   let placed: PlacedPiece[] = [];
   let sheetIndex = startSheetIndex;
 
-  // Records the current bin as a sheet (if anything was placed on it) and pulls the next one.
-  const advanceBin = () => {
+  // Records the current bin as a sheet, if anything was placed on it.
+  const finalizeBin = () => {
     if (placed.length > 0) {
       const ua = usableArea(bin.size, bin.trim);
       const placedArea = placed.reduce((sum, p) => sum + p.width * p.height, 0);
@@ -159,7 +179,13 @@ function packMaterial(
       });
       sheetIndex++;
     }
-    bin = nextBin();
+  };
+
+  // Finalizes the current bin as a sheet (if anything was placed on it) and pulls the next one
+  // sized for `inst` — see makeBinSupplier for why the instance matters for bin selection.
+  const advanceBin = (inst: PieceInstance) => {
+    finalizeBin();
+    bin = nextBin(inst);
     freeRects = initFreeRects(bin.size, bin.trim);
     placed = [];
   };
@@ -186,11 +212,11 @@ function packMaterial(
         unplaced.push({ definitionId: inst.definitionId, instanceIndex: inst.instanceIndex });
         break;
       }
-      advanceBin();
+      advanceBin(inst);
     }
   }
 
-  advanceBin();
+  finalizeBin();
 
   return { sheets, unplaced, nextIndex: sheetIndex };
 }

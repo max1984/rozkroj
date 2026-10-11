@@ -121,6 +121,34 @@ describe('runOptimizer', () => {
     expect(result.materialUsage).toEqual([{ materialId: 'm1', sheetCount: 1, cost: 100 }]);
   });
 
+  it('keeps an offcut available for a later, smaller piece even after an earlier, bigger piece skipped it', () => {
+    // Pieces are processed largest-first. The 600x600 piece can't use the
+    // 300x300 offcut and goes to a fresh 600x600 sheet instead, filling it
+    // completely. The offcut must still be available afterwards for the
+    // 250x250 piece that comes next — not discarded just because the first
+    // piece that happened to need a new bin couldn't use it.
+    const mat = material({ id: 'm1', size: size(600, 600), pricePerSheet: 100 });
+    const offcuts: OffcutItem[] = [{ id: 'o1', materialId: 'm1', width: 300, height: 300, label: 'Scrap' }];
+    const result = runOptimizer(
+      [
+        piece({ id: 'big', materialId: 'm1', width: 600, height: 600, quantity: 1 }),
+        piece({ id: 'small', materialId: 'm1', width: 250, height: 250, quantity: 1 }),
+      ],
+      [mat],
+      offcuts,
+      NO_TRIM_SETTINGS,
+      'maxrects'
+    );
+
+    expect(result.unplacedPieces).toEqual([]);
+    expect(result.sheets).toHaveLength(2);
+    const offcutSheet = result.sheets.find(s => s.sourceOffcutId === 'o1');
+    expect(offcutSheet).toBeDefined();
+    expect(offcutSheet?.placedPieces[0].definitionId).toBe('small');
+    // Only the fresh sheet (for the big piece) is billed — the offcut sheet is free.
+    expect(result.materialUsage).toEqual([{ materialId: 'm1', sheetCount: 1, cost: 100 }]);
+  });
+
   it('packs pieces for each material onto that material\'s own sheets', () => {
     const matA = material({ id: 'ma', size: size(500, 500) });
     const matB = material({ id: 'mb', size: size(500, 500) });
