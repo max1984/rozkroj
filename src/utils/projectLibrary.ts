@@ -76,7 +76,13 @@ export function migrateLegacySingleProject(): void {
   if (!raw) return;
   try {
     const project = migrateProject(JSON.parse(raw));
-    saveProjectToLibrary(project);
-    localStorage.removeItem(LEGACY_SINGLE_KEY);
+    // Only remove the legacy save once the migrated copy is actually
+    // persisted — saveProjectToLibrary() returns false (rather than
+    // throwing) on a localStorage write failure such as quota exceeded,
+    // and removing the legacy key regardless would permanently lose the
+    // user's only saved project with nothing successfully migrated.
+    if (saveProjectToLibrary(project)) {
+      localStorage.removeItem(LEGACY_SINGLE_KEY);
+    }
   } catch { /* ignore corrupt legacy save */ }
 }

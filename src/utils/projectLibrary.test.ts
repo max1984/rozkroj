@@ -154,4 +154,24 @@ describe('migrateLegacySingleProject', () => {
     expect(() => migrateLegacySingleProject()).not.toThrow();
     expect(listProjects()).toEqual([]);
   });
+
+  it('keeps the legacy save instead of deleting it when writing the migrated copy fails', () => {
+    // saveProjectToLibrary() already returns false (instead of throwing) on
+    // a localStorage write failure such as quota exceeded — but its return
+    // value was being discarded here, so the legacy key was removed right
+    // after regardless of whether the migrated copy was actually persisted,
+    // permanently losing the user's only saved project on a failed write.
+    const raw = JSON.stringify(project({ id: 'legacy' }));
+    const removeItem = vi.fn();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => (key === 'rozkroj_project' ? raw : null),
+      setItem: () => { throw new Error('QuotaExceededError'); },
+      removeItem,
+    });
+
+    migrateLegacySingleProject();
+
+    expect(removeItem).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
 });
