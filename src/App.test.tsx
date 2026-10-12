@@ -60,6 +60,17 @@ describe('App', () => {
 
   it('redoes on Cmd/Ctrl+Shift+Z outside of a text field', () => {
     render(<App />);
+    // A REAL browser reports the Shift-modified case here — holding Shift
+    // while pressing the Z key produces key: 'Z', not 'z' — the previous
+    // version of this test used 'z' (matching the component's own bug
+    // instead of real browser behavior), which is why it never caught
+    // that Redo was completely non-functional via the keyboard.
+    fireEvent.keyDown(window, { key: 'Z', metaKey: true, shiftKey: true });
+    expect(H.redo).toHaveBeenCalledTimes(1);
+  });
+
+  it('also redoes if key happens to report lowercase "z" with shiftKey true (e.g. CapsLock on) — the match is case-insensitive', () => {
+    render(<App />);
     fireEvent.keyDown(window, { key: 'z', metaKey: true, shiftKey: true });
     expect(H.redo).toHaveBeenCalledTimes(1);
   });

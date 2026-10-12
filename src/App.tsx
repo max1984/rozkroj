@@ -17,7 +17,10 @@ export default function App() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !isEditableElement(e.target)) {
+      // e.key reflects the Shift-modified case — holding Shift while
+      // pressing the Z key produces 'Z', not 'z' — so a case-sensitive
+      // comparison here would never match Redo (Cmd/Ctrl+Shift+Z) at all.
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !isEditableElement(e.target)) {
         e.preventDefault();
         if (e.shiftKey) redo();
         else undo();
