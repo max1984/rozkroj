@@ -165,6 +165,17 @@ describe('migrateProject', () => {
     expect(result.pieces[0].materialId).toBe('m1');
   });
 
+  it('does not throw when materials are present but pieces is missing entirely (LegacyProject marks it optional)', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces).toEqual([]);
+  });
+
   it('leaves a piece\'s materialId untouched when it matches an existing material', () => {
     const raw = {
       settings: {},
