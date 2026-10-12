@@ -121,25 +121,84 @@ function MaterialRow({
 
           {isCustom && (
             <div className="flex gap-2 items-center">
+              {/* key includes both `unit` AND the current mm value: these
+                  are uncontrolled inputs (defaultValue, not value) so
+                  typing doesn't fight re-renders on every keystroke — but
+                  that also means defaultValue is only ever applied once,
+                  per mount. Without `unit` in the key, switching units
+                  elsewhere (UnitToggle, mounted alongside this in
+                  Sidebar.tsx) leaves the DOM input showing the OLD unit's
+                  stale number while this component re-renders believing
+                  the NEW unit applies — onBlur's `toMm(parseFloat(value),
+                  unit)` would then reinterpret that stale number in the
+                  NEW unit (e.g. "2800" mm reinterpreted as 2800 INCH =
+                  71120mm), silently corrupting the stored size by the
+                  conversion factor on nothing more than an incidental
+                  blur. Without the mm VALUE in the key too, the same class
+                  of staleness survives an external change to this exact
+                  material (e.g. Undo/Redo) while the row stays expanded:
+                  the header line above re-renders with the restored value,
+                  but this input wouldn't remount, so it would keep
+                  showing whatever was last typed into it — tabbing through
+                  it afterward (even without retyping) would silently
+                  reapply that stale number via onBlur, undoing the user's
+                  own Undo. Keying on both forces a remount whenever either
+                  changes, re-applying defaultValue with the correct
+                  current number either way.
+
+                  Known, accepted narrow gap (not fixed — real-browser-only,
+                  unreproducible in this codebase's jsdom tests, and would
+                  need converging onto PieceForm.tsx's controlled-value +
+                  resync-effect pattern to close properly): if this exact
+                  field is focused with an UNCOMMITTED edit (not yet
+                  blurred) at the exact moment material.size.width changes
+                  from elsewhere (e.g. Undo/Redo touching this same
+                  material), removing the about-to-be-replaced DOM node can
+                  synchronously fire a native blur against the OLD
+                  render's closure, committing the stale uncommitted text
+                  under the old key right after the external change —
+                  re-overwriting what Undo/Redo just restored. */}
               <input
+                key={`w-${unit}-${material.size.width}`}
                 type="number"
                 className="field"
                 placeholder={t.widthWithUnit(unit)}
                 aria-label={t.widthWithUnit(unit)}
                 defaultValue={inputValue(material.size.width)}
                 onBlur={e => {
+                  // Compares the PARSED NUMBERS of the typed text and the
+                  // current display value — NOT a plain string compare
+                  // (misses "2800.0" vs "2800"), and NOT the `toMm`-
+                  // converted mm result either (an earlier version of this
+                  // guard did that — `w !== material.size.width` — and it
+                  // was a real regression: inputValue()'s inch display
+                  // already truncates to 4 decimals, so for a sub-0.1mm-
+                  // precision stored width, converting the UNEDITED
+                  // truncated text back through toMm can legitimately
+                  // differ from the original stored value even though the
+                  // user touched nothing — that comparison would then
+                  // silently commit the drifted result instead of
+                  // recognizing an unedited field and skipping entirely).
+                  // Comparing the two parsed numbers directly catches both
+                  // "truly unedited" AND "same number, different spelling"
+                  // without ever running the lossy conversion for an
+                  // unedited field in the first place.
+                  if (parseFloat(e.target.value) === parseFloat(inputValue(material.size.width))) return;
                   const w = toMm(parseFloat(e.target.value), unit);
                   if (w > 0) onUpdate({ size: { ...material.size, width: w } });
                 }}
               />
               <span className="text-muted">×</span>
               <input
+                key={`h-${unit}-${material.size.height}`}
                 type="number"
                 className="field"
                 placeholder={t.heightWithUnit(unit)}
                 aria-label={t.heightWithUnit(unit)}
                 defaultValue={inputValue(material.size.height)}
                 onBlur={e => {
+                  // Same reasoning as the width guard above.
+                  if (parseFloat(e.target.value) === parseFloat(inputValue(material.size.height))) return;
                   const h = toMm(parseFloat(e.target.value), unit);
                   if (h > 0) onUpdate({ size: { ...material.size, height: h } });
                 }}

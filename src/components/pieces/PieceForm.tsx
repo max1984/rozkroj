@@ -1,10 +1,11 @@
-import { useId, useState } from 'react';
+import { useId, useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
 import { DEFAULT_EDGE_BANDING } from '../../constants/defaults';
 import { parsePositiveInt } from '../../utils/validation';
 import { useTranslation } from '../../hooks/useTranslation';
+import { toMm as toMmInUnit, formatInputValue } from '../../utils/units';
 import type { PieceDefinition, GrainDirection, EdgeBanding } from '../../types';
 
 interface Props {
@@ -29,6 +30,56 @@ export function PieceForm({ editing, onClose }: Props) {
   const [rotationAllowed, setRotationAllowed] = useState(editing?.rotationAllowed ?? true);
   const [priority, setPriority] = useState(editing?.priority ?? false);
   const [edgeBanding, setEdgeBanding] = useState<EdgeBanding>(editing?.edgeBanding ?? DEFAULT_EDGE_BANDING);
+
+  // width/height are seeded from inputValue(editing.width/height) only in
+  // the useState initializer above — which runs once, at mount, same as
+  // MaterialManager.tsx's analogous bug (now fixed there). This form
+  // renders inline in the sidebar, not as a modal, so the global UnitToggle
+  // stays fully clickable while editing/adding a piece — switching units
+  // without this effect would leave width/height showing the OLD unit's
+  // number while handleSubmit's `toMm(parseFloat(width))` uses the NEW
+  // current unit, silently corrupting the piece's stored mm dimensions by
+  // the conversion factor on submit, with no edit by the user at all.
+  //
+  // "Untouched" is determined FRESH each time this runs, by comparing the
+  // CURRENT text against what the original editing.width/height would
+  // display as in the OLD unit — not a sticky "has this ever been edited"
+  // flag (an earlier version of this effect used one, set permanently true
+  // by onChange: that meant a single edit-then-revert-to-the-same-number
+  // left the field "touched" forever afterward, reopening the exact drift
+  // bug below for the rest of the mount even though the displayed text was,
+  // at that point, indistinguishable from untouched). When it genuinely
+  // matches, resync DIRECTLY from editing.width/height's exact mm value —
+  // not by reinterpreting the currently-shown text through old-unit->mm->
+  // new-unit conversion math. Reusing the exact original mm value instead
+  // of round-tripping through display text matters because `toMm` only
+  // rounds to 0.1mm when converting FROM inch, never when the unit is
+  // already mm — so a value with sub-0.1mm precision (pieces entered
+  // directly in mm can have more, since mm mode is never rounded) could
+  // otherwise silently drift by up to ~0.05mm on a round-trip toggle
+  // (mm->inch->mm) even though the user typed nothing. Only a genuinely
+  // different typed value goes through the best-effort text conversion,
+  // since there's no "original" left to reuse once it no longer matches.
+  const prevUnitRef = useRef(unit);
+  useEffect(() => {
+    if (prevUnitRef.current === unit) return;
+    const fromUnit = prevUnitRef.current;
+    prevUnitRef.current = unit;
+    const resync = (raw: string, originalMm: number | undefined) => {
+      if (originalMm !== undefined && raw === formatInputValue(originalMm, fromUnit)) {
+        return formatInputValue(originalMm, unit);
+      }
+      const parsed = parseFloat(raw);
+      if (!Number.isFinite(parsed)) return raw; // empty or invalid — leave as-is
+      return formatInputValue(toMmInUnit(parsed, fromUnit), unit);
+    };
+    setWidth(w => resync(w, editing?.width));
+    setHeight(h => resync(h, editing?.height));
+    // editing?.width/height are listed for exhaustive-deps even though
+    // `editing` never actually changes within one PieceForm mount (PieceRow
+    // unmounts/remounts this form when toggling edit mode) — harmless
+    // either way, since the guard above only acts when `unit` itself changed.
+  }, [unit, editing?.width, editing?.height]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

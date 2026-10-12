@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MaterialManager } from './MaterialManager';
 import { STANDARD_SHEET_SIZES } from '../../constants/sheetSizes';
+import { formatInputValue } from '../../utils/units';
 import type { MaterialStock, PieceDefinition } from '../../types';
 
 const addMaterial = vi.fn();
@@ -10,6 +11,7 @@ const updateMaterial = vi.fn();
 const removeMaterial = vi.fn();
 let materials: MaterialStock[] = [];
 let pieces: PieceDefinition[] = [];
+let mockUnit: 'mm' | 'inch' = 'mm';
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: {
@@ -19,10 +21,14 @@ vi.mock('../../store', () => ({
 }));
 
 vi.mock('../../hooks/useUnitDisplay', () => ({
+  // unit is read fresh on every call (not captured once) so tests can flip
+  // mockUnit and re-render to simulate the user toggling units elsewhere
+  // (UnitToggle, mounted alongside this component in Sidebar.tsx) while
+  // this one stays mounted.
   useUnitDisplay: () => ({
-    unit: 'mm' as const,
+    unit: mockUnit,
     format: (mm: number) => `${mm}mm`,
-    inputValue: (mm: number) => String(mm),
+    inputValue: (mm: number) => formatInputValue(mm, mockUnit),
   }),
 }));
 
@@ -40,6 +46,7 @@ afterEach(() => {
   vi.clearAllMocks();
   materials = [];
   pieces = [];
+  mockUnit = 'mm';
 });
 
 describe('MaterialManager', () => {
@@ -79,6 +86,81 @@ describe('MaterialManager', () => {
     fireEvent.blur(screen.getByPlaceholderText('Height (mm)'), { target: { value: '' } });
     expect(updateMaterial).not.toHaveBeenCalled();
   });
+
+  it(
+    're-syncs the custom-size input to the new unit on a unit switch, instead of leaving the old ' +
+      "unit's stale number in the DOM where a later blur would reinterpret it in the NEW unit " +
+      '(e.g. "2800" mm silently becoming 2800 INCH -> 71120mm on blur, with no edit by the user at all)',
+    () => {
+      materials = [material({ size: { label: 'Custom', width: 2800, height: 500, custom: true } })];
+      const { rerender } = render(<MaterialManager />);
+      const widthInputBefore = screen.getByPlaceholderText('Width (mm)') as HTMLInputElement;
+      expect(widthInputBefore.value).toBe('2800');
+
+      mockUnit = 'inch';
+      rerender(<MaterialManager />);
+
+      // key={unit} forces a remount here — the input must now be a FRESH
+      // element showing the correctly inch-converted number, not the old
+      // element still holding "2800".
+      const widthInputAfter = screen.getByPlaceholderText('Width (inch)') as HTMLInputElement;
+      expect(widthInputAfter.value).toBe(formatInputValue(2800, 'inch'));
+
+      // And blurring it now, unedited, must do NOTHING — the displayed
+      // text already matches the current value exactly, so there's
+      // nothing to commit. (It must NOT reinterpret "2800" as inches
+      // either way, but asserting "not called at all" is the stronger,
+      // more precise claim now that an unedited blur is a deliberate no-op.)
+      fireEvent.blur(widthInputAfter, { target: { value: widthInputAfter.value } });
+      expect(updateMaterial).not.toHaveBeenCalled();
+    }
+  );
+
+  it('does nothing on an unedited blur, even without a unit switch — avoids a false dirty-flag/undo-entry for a value nothing changed', () => {
+    materials = [material({ size: { label: 'Custom', width: 2800, height: 500, custom: true } })];
+    render(<MaterialManager />);
+    const widthInput = screen.getByPlaceholderText('Width (mm)') as HTMLInputElement;
+
+    fireEvent.blur(widthInput, { target: { value: widthInput.value } });
+
+    expect(updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it(
+    'also does nothing when the typed text is a differently-formatted but numerically identical value — ' +
+      'the guard compares the PARSED NUMBERS of the typed text and the display value, not the raw ' +
+      'strings, so "2800.0" for an already-2800 width is recognized as unchanged too',
+    () => {
+      materials = [material({ size: { label: 'Custom', width: 2800, height: 500, custom: true } })];
+      render(<MaterialManager />);
+      const widthInput = screen.getByPlaceholderText('Width (mm)') as HTMLInputElement;
+
+      fireEvent.blur(widthInput, { target: { value: '2800.0' } });
+
+      expect(updateMaterial).not.toHaveBeenCalled();
+    }
+  );
+
+  it(
+    'does not silently drift a sub-0.1mm-precision custom width on an unedited blur after a unit switch ' +
+      '— the guard must recognize "unedited" WITHOUT ever running the lossy toMm conversion first, since ' +
+      'that conversion alone (applied to the already-truncated inch display) can differ from the ' +
+      'original even though the user touched nothing',
+    () => {
+      materials = [material({ size: { label: 'Custom', width: 123.456, height: 500, custom: true } })];
+      const { rerender } = render(<MaterialManager />);
+
+      mockUnit = 'inch';
+      rerender(<MaterialManager />);
+      const widthInput = screen.getByPlaceholderText('Width (inch)') as HTMLInputElement;
+
+      // Unedited blur — the field shows whatever defaultValue/key gave it,
+      // untouched by the user.
+      fireEvent.blur(widthInput, { target: { value: widthInput.value } });
+
+      expect(updateMaterial).not.toHaveBeenCalled();
+    }
+  );
 
   it('defaults an empty price-per-sheet entry to 0', () => {
     // Starts non-zero so clearing the field is an actual DOM value change.
