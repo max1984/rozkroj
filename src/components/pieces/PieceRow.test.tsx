@@ -71,6 +71,23 @@ describe('PieceRow', () => {
     expect(setSelectedPieceId).toHaveBeenCalledWith(null);
   });
 
+  it('selects the piece on Enter or Space, and exposes aria-pressed/role=button for keyboard/screen-reader users', () => {
+    const { container, rerender } = render(<PieceRow piece={piece()} />);
+    const row = container.firstElementChild!;
+    expect(row.getAttribute('role')).toBe('button');
+    expect(row.getAttribute('tabindex')).toBe('0');
+    expect(row.getAttribute('aria-pressed')).toBe('false');
+
+    fireEvent.keyDown(row, { key: 'Enter' });
+    expect(setSelectedPieceId).toHaveBeenCalledWith('p1');
+
+    selectedPieceId = 'p1';
+    rerender(<PieceRow piece={piece()} />);
+    expect(container.firstElementChild!.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.keyDown(container.firstElementChild!, { key: ' ' });
+    expect(setSelectedPieceId).toHaveBeenCalledWith(null);
+  });
+
   it('sets and clears the hovered piece id on mouse enter/leave', () => {
     const { container } = render(<PieceRow piece={piece()} />);
     const row = container.firstElementChild!;

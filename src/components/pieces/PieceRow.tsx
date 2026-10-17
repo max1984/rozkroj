@@ -34,10 +34,27 @@ export function PieceRow({ piece }: Props) {
     );
   }
 
+  const toggleSelected = () => setSelectedPieceId(isSelected ? null : piece.id);
+
   return (
     <div
       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-accent bg-accent-soft' : 'border-line hover:border-muted'}`}
-      onClick={() => setSelectedPieceId(isSelected ? null : piece.id)}
+      role="button"
+      tabIndex={0}
+      aria-pressed={isSelected}
+      onClick={toggleSelected}
+      onKeyDown={e => {
+        // The row can't be a real <button> — it contains the edit/duplicate/
+        // delete buttons below, and nesting a button inside a button is
+        // invalid HTML (browsers break the DOM instead of nesting it). This
+        // is the standard role="button" + tabIndex + manual key handling
+        // substitute, so the row stays reachable by Tab and operable via
+        // Enter/Space like a real button, instead of only by mouse click.
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleSelected();
+        }
+      }}
       onMouseEnter={() => setHoveredPieceId(piece.id)}
       onMouseLeave={() => setHoveredPieceId(null)}
     >
