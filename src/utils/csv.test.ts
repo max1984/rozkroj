@@ -140,4 +140,32 @@ describe('importCsv', () => {
     expect(onDone.mock.calls[0][1]).toBe(0);
     expect(onDone.mock.calls[0][0][0].materialId).toBe('m1');
   });
+
+  it('drops rows with a non-numeric or zero/negative Width or Height, and counts them', async () => {
+    const csv = 'Name,Width (mm),Height (mm),Quantity\n'
+      + 'Good,600,400,1\n'
+      + 'BadWidth,abc,400,1\n'
+      + 'ZeroHeight,600,0,1\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    const [pieces, , invalidDimensionCount] = onDone.mock.calls[0];
+    expect(pieces).toHaveLength(1);
+    expect(pieces[0].name).toBe('Good');
+    expect(invalidDimensionCount).toBe(2);
+  });
+
+  it('falls back to a quantity of 1 instead of NaN when the Quantity cell is not a positive integer', async () => {
+    const csv = 'Name,Width (mm),Height (mm),Quantity\nShelf,600,400,abc\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    expect(onDone.mock.calls[0][0][0].quantity).toBe(1);
+  });
 });

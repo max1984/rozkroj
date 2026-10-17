@@ -139,5 +139,7 @@ export const de: Translations = {
   couldNotReadFile: 'Datei konnte nicht gelesen werden.',
   csvUnmatchedMaterialWarning: (count) =>
     `${count} Teil${count !== 1 ? 'e' : ''} hatte${count !== 1 ? 'n' : ''} ein Material, das zu keinem vorhandenen Material passte, und wurde${count !== 1 ? 'n' : ''} stattdessen dem Standard zugewiesen.`,
+  csvInvalidDimensionWarning: (count) =>
+    `${count} Zeile${count !== 1 ? 'n' : ''} hatte${count !== 1 ? 'n' : ''} eine fehlende oder nicht-numerische Breite/Höhe und wurde${count !== 1 ? 'n' : ''} übersprungen.`,
   pdfGenerationFailed: 'PDF-Erstellung fehlgeschlagen. Falls die App gerade aktualisiert wurde, laden Sie die Seite neu.',
 };

@@ -74,7 +74,7 @@ describe('PieceList', () => {
   it('imports a CSV file and appends the parsed pieces to the current list', () => {
     pieces = [piece({ id: 'existing' })];
     const imported = [piece({ id: 'new-1' })];
-    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 0));
+    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 0, 0));
 
     const { container } = render(<PieceList />);
     const fileInput = container.querySelector('input[type="file"]')!;
@@ -87,7 +87,7 @@ describe('PieceList', () => {
   it('warns when some rows had a Material that matched nothing, but still imports them', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     const imported = [piece({ id: 'new-1' })];
-    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 2));
+    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 2, 0));
 
     const { container } = render(<PieceList />);
     const fileInput = container.querySelector('input[type="file"]')!;
@@ -96,6 +96,21 @@ describe('PieceList', () => {
 
     expect(setPieces).toHaveBeenCalledWith([...pieces, ...imported]);
     expect(alertSpy).toHaveBeenCalledWith("2 pieces had a Material that didn't match any existing material and were assigned to the default instead.");
+    alertSpy.mockRestore();
+  });
+
+  it('warns when some rows had a missing or non-numeric Width/Height, and excludes them from the import', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const imported = [piece({ id: 'new-1' })];
+    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 0, 1));
+
+    const { container } = render(<PieceList />);
+    const fileInput = container.querySelector('input[type="file"]')!;
+    const file = new File(['csv'], 'cutlist.csv', { type: 'text/csv' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(setPieces).toHaveBeenCalledWith([...pieces, ...imported]);
+    expect(alertSpy).toHaveBeenCalledWith('1 row had a missing or non-numeric Width/Height and was skipped.');
     alertSpy.mockRestore();
   });
 

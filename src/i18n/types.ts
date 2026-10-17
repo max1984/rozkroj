@@ -140,5 +140,6 @@ export interface Translations {
   invalidProjectFile: string;
   couldNotReadFile: string;
   csvUnmatchedMaterialWarning: (count: number) => string;
+  csvInvalidDimensionWarning: (count: number) => string;
   pdfGenerationFailed: string;
 }

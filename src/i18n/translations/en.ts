@@ -139,5 +139,7 @@ export const en: Translations = {
   couldNotReadFile: 'Could not read the file.',
   csvUnmatchedMaterialWarning: (count) =>
     `${count} piece${count !== 1 ? 's' : ''} had a Material that didn't match any existing material and ${count !== 1 ? 'were' : 'was'} assigned to the default instead.`,
+  csvInvalidDimensionWarning: (count) =>
+    `${count} row${count !== 1 ? 's' : ''} had a missing or non-numeric Width/Height and ${count !== 1 ? 'were' : 'was'} skipped.`,
   pdfGenerationFailed: 'Failed to generate the PDF. If the app was just updated, try reloading the page.',
 };

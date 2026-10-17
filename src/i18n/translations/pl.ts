@@ -162,5 +162,12 @@ export const pl: Translations = {
       `${count} elementy miały`,
       `${count} elementów miało`
     )} materiał, który nie pasował do żadnego istniejącego materiału, i ${polishForm(count, 'został przypisany', 'zostały przypisane', 'zostały przypisane')} do domyślnego.`,
+  csvInvalidDimensionWarning: (count) =>
+    `${polishForm(
+      count,
+      `${count} wiersz miał`,
+      `${count} wiersze miały`,
+      `${count} wierszy miało`
+    )} brakującą lub nienumeryczną szerokość/wysokość i ${polishForm(count, 'został pominięty', 'zostały pominięte', 'zostało pominiętych')} przy imporcie.`,
   pdfGenerationFailed: 'Nie udało się wygenerować pliku PDF. Jeśli aplikacja została właśnie zaktualizowana, spróbuj odświeżyć stronę.',
 };

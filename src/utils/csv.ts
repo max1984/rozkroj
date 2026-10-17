@@ -2,6 +2,7 @@ import Papa from 'papaparse';
 import type { PieceDefinition, MaterialStock } from '../types';
 import { toMm } from './units';
 import { getPieceColor } from './colors';
+import { parsePositiveInt } from './validation';
 import { nanoid } from 'nanoid';
 
 /**
@@ -73,7 +74,7 @@ export function importCsv(
   unit: 'mm' | 'inch',
   existingCount: number,
   materials: MaterialStock[],
-  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number) => void,
+  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number) => void,
   onError: (msg: string) => void
 ): void {
   const defaultMaterialId = materials[0]?.id ?? '';
@@ -86,10 +87,20 @@ export function importCsv(
       try {
         const csvUnit = detectUnitFromHeaders(result.meta.fields, unit);
         let unmatchedMaterialCount = 0;
-        const pieces: PieceDefinition[] = (result.data as Record<string, string>[]).map((row, i) => {
+        let invalidDimensionCount = 0;
+        const pieces: PieceDefinition[] = [];
+        (result.data as Record<string, string>[]).forEach((row, i) => {
           const name = row['Name'] || `Piece ${existingCount + i + 1}`;
           const widthRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('width')) ?? '0');
           const heightRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('height')) ?? '0');
+          // A non-numeric or zero/negative cell would otherwise silently become a
+          // piece the optimizer can never place, with no indication to the user
+          // that the row was dropped (NaN/0 comparisons in the packer are just
+          // always false, so the piece vanishes from the layout instead of erroring).
+          if (!Number.isFinite(widthRaw) || widthRaw <= 0 || !Number.isFinite(heightRaw) || heightRaw <= 0) {
+            invalidDimensionCount++;
+            return;
+          }
           const materialCell = row['Material'] || '';
           const matchedId = byName.get(materialCell.toLowerCase());
           // A non-empty Material cell that matches nothing (typo, or a name
@@ -98,21 +109,24 @@ export function importCsv(
           // the user that the assignment didn't actually come from the file.
           if (materialCell && !matchedId) unmatchedMaterialCount++;
           const materialId = matchedId ?? defaultMaterialId;
-          return {
+          pieces.push({
             id: nanoid(),
             name,
             materialId,
             width: toMm(widthRaw, csvUnit),
             height: toMm(heightRaw, csvUnit),
-            quantity: parseInt(row['Quantity'] || '1', 10),
+            // Same rule as the manual add-piece form: a non-integer or missing
+            // cell used to reach parseInt() directly, which produced NaN (not
+            // the same gap as a missing column, which legitimately defaults to 1).
+            quantity: parsePositiveInt(row['Quantity'] ?? '') ?? 1,
             grain: (row['Grain'] as PieceDefinition['grain']) || 'none',
             rotationAllowed: row['RotationAllowed']?.toLowerCase() !== 'false',
             priority: row['Priority']?.toLowerCase() === 'true',
             edgeBanding: edgesFromString(row['EdgeBanding']),
             color: getPieceColor(existingCount + i),
-          };
+          });
         });
-        onDone(pieces, unmatchedMaterialCount);
+        onDone(pieces, unmatchedMaterialCount, invalidDimensionCount);
       } catch {
         onError('Failed to parse CSV. Check column names.');
       }
