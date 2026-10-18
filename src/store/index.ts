@@ -172,7 +172,7 @@ function confirmDiscardUnsaved(get: () => AppState, message?: string): boolean {
 // any future component could pass without the user ever being asked.
 function resetProject(set: (partial: Partial<AppState>) => void, get: () => AppState): void {
   const language = get().language;
-  set({ ...blankProject(language, TRANSLATIONS[language]?.newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
+  set({ ...blankProject(language, (TRANSLATIONS[language] ?? TRANSLATIONS.en).newProjectDefaultName), layout: null, selectedPieceId: null, hoveredPieceId: null });
   useStore.temporal.getState().clear();
   savedSnapshot = undoTrackedFields(get());
   set({ hasUnsavedChanges: false });

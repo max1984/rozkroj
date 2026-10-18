@@ -404,6 +404,20 @@ describe('store: project lifecycle', () => {
     expect(state.projectName).toBe('New Project');
   });
 
+  it(
+    'newProject falls back to the English default name for an unrecognized language ' +
+      '— resetProject was the one TRANSLATIONS[language] access in the codebase missing the ' +
+      '?? TRANSLATIONS.en fallback every other call site already has',
+    async () => {
+      const useStore = await freshStore();
+      useStore.setState({ language: 'xx' as never });
+
+      useStore.getState().newProject();
+
+      expect(useStore.getState().projectName).toBe('New Project');
+    }
+  );
+
   it('saveProject then loadProjectById round-trips the project', async () => {
     const useStore = await freshStore();
     useStore.getState().setProjectName('My Cabinets');
