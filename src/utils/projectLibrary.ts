@@ -4,7 +4,8 @@ import { migrateProject } from './migrateProject';
 const INDEX_KEY = 'rozkroj_library_index';
 const ACTIVE_ID_KEY = 'rozkroj_active_project_id';
 const LEGACY_SINGLE_KEY = 'rozkroj_project';
-const projectKey = (id: string) => `rozkroj_library_project_${id}`;
+const PROJECT_KEY_PREFIX = 'rozkroj_library_project_';
+const projectKey = (id: string) => `${PROJECT_KEY_PREFIX}${id}`;
 
 export interface LibraryEntry {
   id: string;
@@ -13,12 +14,35 @@ export interface LibraryEntry {
 }
 
 function readIndex(): LibraryEntry[] {
+  const raw = localStorage.getItem(INDEX_KEY);
+  if (raw === null) return [];
   try {
-    const raw = localStorage.getItem(INDEX_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return JSON.parse(raw);
   } catch {
-    return [];
+    // The index is corrupt (as opposed to simply not existing yet). Every
+    // project is stored independently under its own projectKey(id), so
+    // nothing is actually lost — but returning [] here would make the next
+    // saveProjectToLibrary() overwrite INDEX_KEY with just that one project,
+    // permanently orphaning every other still-intact project (same class of
+    // silent-data-loss bug as czytajka's LibraryStore). Rebuild the index
+    // from the individually-keyed projects instead of discarding them.
+    return rebuildIndexFromStoredProjects();
   }
+}
+
+function rebuildIndexFromStoredProjects(): LibraryEntry[] {
+  const entries: LibraryEntry[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key?.startsWith(PROJECT_KEY_PREFIX)) continue;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const project = migrateProject(JSON.parse(raw));
+      entries.push({ id: project.id, name: project.name, updatedAt: project.updatedAt });
+    } catch { /* skip an individually-corrupt project, keep the rest */ }
+  }
+  return entries;
 }
 
 function writeIndex(entries: LibraryEntry[]): void {

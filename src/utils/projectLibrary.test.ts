@@ -82,6 +82,27 @@ describe('listProjects', () => {
   it('returns an empty list when nothing has been saved', () => {
     expect(listProjects()).toEqual([]);
   });
+
+  it('rebuilds the index from individually-stored projects instead of losing them when the index itself is corrupt', () => {
+    saveProjectToLibrary(project({ id: 'p1', name: 'First', updatedAt: 100 }));
+    saveProjectToLibrary(project({ id: 'p2', name: 'Second', updatedAt: 200 }));
+    localStorage.setItem('rozkroj_library_index', '{not valid json');
+
+    expect(listProjects().map(e => e.id).sort()).toEqual(['p1', 'p2']);
+    // Both projects' own data must still be intact, not just rediscoverable.
+    expect(loadProjectFromLibrary('p1')?.name).toBe('First');
+    expect(loadProjectFromLibrary('p2')?.name).toBe('Second');
+  });
+
+  it('does not let a corrupt index get silently overwritten down to one project on the next save', () => {
+    saveProjectToLibrary(project({ id: 'p1', updatedAt: 100 }));
+    saveProjectToLibrary(project({ id: 'p2', updatedAt: 200 }));
+    localStorage.setItem('rozkroj_library_index', '{not valid json');
+
+    saveProjectToLibrary(project({ id: 'p2', name: 'Edited', updatedAt: 300 }));
+
+    expect(listProjects().map(e => e.id).sort()).toEqual(['p1', 'p2']);
+  });
 });
 
 describe('deleteProjectFromLibrary', () => {
