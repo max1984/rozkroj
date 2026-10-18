@@ -10,13 +10,23 @@ const material: MaterialStock = {
   size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0,
 };
 
+const material2: MaterialStock = {
+  id: 'm2', name: 'MDF', color: '#f28e2b',
+  size: { label: 'Sheet', width: 2800, height: 2070 }, pricePerSheet: 0,
+};
+
 const addPiece = vi.fn();
 const updatePiece = vi.fn();
 let mockUnit: 'mm' | 'inch' = 'mm';
+// Mutable (not a literal captured once by the mock factory) so a test can
+// simulate MaterialManager — rendered alongside this form, not modally —
+// deleting the currently selected material out from under an open form,
+// the same way `mockUnit` simulates UnitToggle being used elsewhere.
+let mockMaterials: MaterialStock[] = [material];
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: { addPiece: typeof addPiece; updatePiece: typeof updatePiece; materials: MaterialStock[] }) => unknown) =>
-    selector({ addPiece, updatePiece, materials: [material] }),
+    selector({ addPiece, updatePiece, materials: mockMaterials }),
 }));
 
 vi.mock('../../hooks/useUnitDisplay', () => ({
@@ -38,6 +48,7 @@ afterEach(() => {
   addPiece.mockClear();
   updatePiece.mockClear();
   mockUnit = 'mm';
+  mockMaterials = [material];
 });
 
 function fillAndSubmit(container: HTMLElement, values: { width?: string; height?: string; qty?: string }) {
@@ -194,6 +205,27 @@ describe('PieceForm', () => {
     expect(updatePiece.mock.calls[0][1]).toMatchObject({ width: 700 });
     expect(addPiece).not.toHaveBeenCalled();
   });
+
+  it(
+    'resyncs materialId to the fallback material if the selected one is deleted (via MaterialManager, ' +
+      'rendered alongside this inline form, not a modal) while this form is still open and uncommitted — ' +
+      "without this, submitting afterward would save a materialId matching no entry in `materials`, and " +
+      "optimizer.ts's exact-id filter per material would silently drop the piece from every sheet's layout",
+    () => {
+      mockMaterials = [material, material2];
+      const onClose = vi.fn();
+      const { container, rerender } = render(<PieceForm onClose={onClose} />);
+
+      // Material removed elsewhere (MaterialManager) — 'm1' no longer exists.
+      mockMaterials = [material2];
+      rerender(<PieceForm onClose={onClose} />);
+
+      fillAndSubmit(container, { width: '600', height: '400', qty: '1' });
+
+      expect(addPiece).toHaveBeenCalledTimes(1);
+      expect(addPiece.mock.calls[0][0]).toMatchObject({ materialId: 'm2' });
+    }
+  );
 
   it('associates each field with its visible label for screen readers', () => {
     render(<PieceForm onClose={vi.fn()} />);

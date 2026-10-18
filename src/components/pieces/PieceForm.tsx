@@ -81,6 +81,35 @@ export function PieceForm({ editing, onClose }: Props) {
     // either way, since the guard above only acts when `unit` itself changed.
   }, [unit, editing?.width, editing?.height]);
 
+  // This form renders inline in the sidebar (not a modal), so MaterialManager
+  // stays fully usable while adding/editing a piece — deleting the currently
+  // selected material there removeMaterial()'s already reassign EXISTING
+  // pieces to a fallback material, but that reassignment can't reach a piece
+  // that's still only local, uncommitted state here. Without this, submitting
+  // afterward would save a materialId that no longer matches any entry in
+  // `materials` — optimizer.ts filters pieces per material by exact id match,
+  // so the piece would silently match none and vanish from every sheet's
+  // layout with no error at all. Resync to the same fallback choice
+  // removeMaterial() uses (first remaining material) whenever the selected
+  // one disappears from the list.
+  //
+  // Adjusted during render (not in a useEffect): `materialId` is both read
+  // and set here, so an effect depending on it would re-run itself on every
+  // commit (react-hooks/set-state-in-effect flags exactly this). Comparing
+  // against a `prevMaterials` state value and setting state directly in the
+  // render body is React's documented pattern for this ("adjusting state
+  // when a prop changes") — a ref can't be read during render (the
+  // react-hooks/refs rule flags that too), so the previous value has to be
+  // state as well. Re-renders once more with the corrected id before
+  // anything is painted, same end result without an extra effect pass.
+  const [prevMaterials, setPrevMaterials] = useState(materials);
+  if (prevMaterials !== materials) {
+    setPrevMaterials(materials);
+    if (materialId && !materials.some(m => m.id === materialId)) {
+      setMaterialId(materials[0]?.id ?? '');
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const w = toMm(parseFloat(width));
