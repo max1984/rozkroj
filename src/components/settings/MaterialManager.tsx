@@ -208,15 +208,32 @@ function MaterialRow({
 
           <div>
             <label htmlFor={`${id}-price`} className="block text-xs text-muted mb-1">{t.pricePerSheetLabel}</label>
+            {/* Same decimal-typing bug as the width/height fields above and
+                KerfSettings.tsx's sawKerf/freshEdgeTrim: fully-controlled
+                `value={material.pricePerSheet || ''}` committed on every
+                onChange, so typing "." toward e.g. "12.50" committed
+                parseFloat('12.')===12 immediately and re-rendered the field
+                back to "12", erasing the "." — step="0.01" implies decimal
+                prices are the normal case. Switched to the same uncontrolled
+                defaultValue + onBlur-commit idiom, keyed on the stored value
+                so an external change (Undo/Redo) still forces a fresh
+                defaultValue. No `unit` in the key — price isn't unit-
+                converted like width/height are. */}
             <input
+              key={`price-${material.pricePerSheet}`}
               id={`${id}-price`}
               type="number"
               min="0"
               step="0.01"
               className="field"
-              value={material.pricePerSheet || ''}
+              defaultValue={material.pricePerSheet || ''}
               placeholder="0"
-              onChange={e => onUpdate({ pricePerSheet: parseFloat(e.target.value) || 0 })}
+              onBlur={e => {
+                const parsed = parseFloat(e.target.value);
+                const next = isNaN(parsed) ? 0 : parsed;
+                if (next === (material.pricePerSheet || 0)) return;
+                onUpdate({ pricePerSheet: next });
+              }}
             />
           </div>
 

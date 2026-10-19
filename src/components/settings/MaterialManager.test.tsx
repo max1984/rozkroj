@@ -162,21 +162,47 @@ describe('MaterialManager', () => {
     }
   );
 
-  it('defaults an empty price-per-sheet entry to 0', () => {
+  it('defaults an empty price-per-sheet entry to 0 on blur', () => {
     // Starts non-zero so clearing the field is an actual DOM value change.
     materials = [material({ pricePerSheet: 10 })];
     render(<MaterialManager />);
     const priceInput = screen.getByDisplayValue('10');
-    fireEvent.change(priceInput, { target: { value: '' } });
+    fireEvent.blur(priceInput, { target: { value: '' } });
     expect(updateMaterial).toHaveBeenCalledWith('m1', { pricePerSheet: 0 });
   });
 
-  it('parses a valid price-per-sheet entry', () => {
+  it('parses a valid price-per-sheet entry on blur', () => {
     materials = [material()];
     render(<MaterialManager />);
     const priceInput = screen.getByPlaceholderText('0');
-    fireEvent.change(priceInput, { target: { value: '42.5' } });
+    fireEvent.blur(priceInput, { target: { value: '42.5' } });
     expect(updateMaterial).toHaveBeenCalledWith('m1', { pricePerSheet: 42.5 });
+  });
+
+  it(
+    'lets a decimal price be typed character-by-character instead of being stripped mid-typing — ' +
+      'the field used to be fully controlled, re-committing parseFloat(text) on every change and ' +
+      'reformatting the input back to the plain integer the moment the trailing "." was typed, making ' +
+      'it impossible to ever reach a value like 12.50',
+    () => {
+      materials = [material()];
+      render(<MaterialManager />);
+      const priceInput = screen.getByPlaceholderText('0');
+      fireEvent.change(priceInput, { target: { value: '12' } });
+      fireEvent.change(priceInput, { target: { value: '12.' } });
+      fireEvent.change(priceInput, { target: { value: '12.5' } });
+      expect(updateMaterial).not.toHaveBeenCalled();  // uncontrolled — no commit until blur
+      fireEvent.blur(priceInput, { target: { value: '12.5' } });
+      expect(updateMaterial).toHaveBeenCalledWith('m1', { pricePerSheet: 12.5 });
+    }
+  );
+
+  it('ignores an unedited price blur (same value re-blurred)', () => {
+    materials = [material({ pricePerSheet: 10 })];
+    render(<MaterialManager />);
+    const priceInput = screen.getByDisplayValue('10') as HTMLInputElement;
+    fireEvent.blur(priceInput, { target: { value: priceInput.value } });
+    expect(updateMaterial).not.toHaveBeenCalled();
   });
 
   it('switches to a standard sheet size, replacing the size object', () => {
