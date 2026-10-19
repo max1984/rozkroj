@@ -170,6 +170,24 @@ describe('Toolbar', () => {
     expect(H.exportProject).toHaveBeenCalledTimes(1);
   });
 
+  it('reads a fresh layout at generation time instead of the one captured when the Export button was clicked', async () => {
+    const oldLayout: LayoutResult = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
+    const newLayout: LayoutResult = { ...oldLayout, computedAt: 1 };
+    H.mutable.layout = oldLayout;
+    H.exportProject.mockImplementation(exportedProject);
+    render(<Toolbar />);
+    fireEvent.click(screen.getByText('PDF'));
+    fireEvent.click(screen.getByText('Download PDF'));
+
+    // A re-optimize finishes while the PDF-library dynamic import is still
+    // pending — before the fix, handlePdf used the layout captured in its
+    // closure at render time (oldLayout) instead of re-reading current state.
+    H.mutable.layout = newLayout;
+
+    await vi.waitFor(() => expect(generatePdf).toHaveBeenCalledTimes(1));
+    expect(generatePdf.mock.calls[0][0]).toBe(newLayout);
+  });
+
   it('alerts instead of failing silently when PDF generation throws (e.g. a stale chunk after a redeploy)', async () => {
     H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
     H.exportProject.mockImplementation(exportedProject);

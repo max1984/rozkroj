@@ -43,8 +43,17 @@ export function Toolbar() {
       // replaced it — so this needs its own error handling rather than
       // failing as a silent, uncaught promise rejection.
       const { generatePdf } = await import('../../utils/pdf');
+      // Re-read layout from the store here too, not the `layout` captured
+      // in this closure at render time — the dynamic import above can take
+      // a moment (slow connection, or simply its first load this session),
+      // and fetching project fresh here but layout stale let a re-optimize
+      // or piece edit in that window produce a PDF whose visual sheet pages
+      // (built from the stale layout) silently dropped or mislabeled pieces
+      // that drawSheet looks up by id against project.pieces (fresh).
+      const currentLayout = useStore.getState().layout;
+      if (!currentLayout) return;
       const project = useStore.getState().exportProject();
-      await generatePdf(layout, project, pdfAllOnOne);
+      await generatePdf(currentLayout, project, pdfAllOnOne);
       setShowPdfOpts(false);
     } catch {
       alert(t.pdfGenerationFailed);
