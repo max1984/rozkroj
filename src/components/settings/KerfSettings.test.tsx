@@ -35,19 +35,37 @@ describe('KerfSettings', () => {
     expect(setSettings).toHaveBeenCalledWith({ freshEdge: false });
   });
 
-  it('updates sawKerf on a valid numeric change', () => {
+  it('updates sawKerf on blur with a valid value', () => {
     const { container } = render(<KerfSettings />);
     const inputs = container.querySelectorAll('input[type="number"]');
     const sawKerfInput = inputs[inputs.length - 1];
-    fireEvent.change(sawKerfInput, { target: { value: '5' } });
+    fireEvent.blur(sawKerfInput, { target: { value: '5' } });
     expect(setSettings).toHaveBeenCalledWith({ sawKerf: 5 });
   });
+
+  it(
+    'lets a decimal sawKerf be typed character-by-character instead of being stripped mid-typing — ' +
+      'the field used to be fully controlled, re-committing parseFloat(text) on every change and ' +
+      'reformatting the input back to the plain integer the moment the trailing "." was typed, making ' +
+      'it impossible to ever reach a value like 2.5',
+    () => {
+      const { container } = render(<KerfSettings />);
+      const inputs = container.querySelectorAll('input[type="number"]');
+      const sawKerfInput = inputs[inputs.length - 1] as HTMLInputElement;
+      fireEvent.change(sawKerfInput, { target: { value: '2' } });
+      fireEvent.change(sawKerfInput, { target: { value: '2.' } });
+      fireEvent.change(sawKerfInput, { target: { value: '2.5' } });
+      expect(setSettings).not.toHaveBeenCalled();  // uncontrolled — no commit until blur
+      fireEvent.blur(sawKerfInput, { target: { value: '2.5' } });
+      expect(setSettings).toHaveBeenCalledWith({ sawKerf: 2.5 });
+    }
+  );
 
   it('ignores an empty sawKerf value instead of setting NaN', () => {
     const { container } = render(<KerfSettings />);
     const inputs = container.querySelectorAll('input[type="number"]');
     const sawKerfInput = inputs[inputs.length - 1];
-    fireEvent.change(sawKerfInput, { target: { value: '' } });
+    fireEvent.blur(sawKerfInput, { target: { value: '' } });
     expect(setSettings).not.toHaveBeenCalled();
   });
 
@@ -55,7 +73,15 @@ describe('KerfSettings', () => {
     const { container } = render(<KerfSettings />);
     const inputs = container.querySelectorAll('input[type="number"]');
     const sawKerfInput = inputs[inputs.length - 1];
-    fireEvent.change(sawKerfInput, { target: { value: '-1' } });
+    fireEvent.blur(sawKerfInput, { target: { value: '-1' } });
+    expect(setSettings).not.toHaveBeenCalled();
+  });
+
+  it('ignores an unedited sawKerf blur (same value re-blurred)', () => {
+    const { container } = render(<KerfSettings />);
+    const inputs = container.querySelectorAll('input[type="number"]');
+    const sawKerfInput = inputs[inputs.length - 1] as HTMLInputElement;
+    fireEvent.blur(sawKerfInput, { target: { value: sawKerfInput.value } });
     expect(setSettings).not.toHaveBeenCalled();
   });
 
@@ -65,11 +91,11 @@ describe('KerfSettings', () => {
     expect(container.querySelectorAll('input[type="number"]')).toHaveLength(1);
   });
 
-  it('updates freshEdgeTrim on a valid numeric change', () => {
+  it('updates freshEdgeTrim on blur with a valid value', () => {
     const { container } = render(<KerfSettings />);
     const inputs = container.querySelectorAll('input[type="number"]');
     const trimInput = inputs[0];
-    fireEvent.change(trimInput, { target: { value: '15' } });
+    fireEvent.blur(trimInput, { target: { value: '15' } });
     expect(setSettings).toHaveBeenCalledWith({ freshEdgeTrim: 15 });
   });
 
