@@ -315,6 +315,29 @@ describe('store: hasUnsavedChanges', () => {
     }
   );
 
+  it(
+    'regression: addOffcut/removeOffcut mark the project dirty — offcutStock was missing from ' +
+      'undoTrackedFields even though it is part of the saved project (exportProject/loadProject round-trip ' +
+      'it), so "Save offcuts" and deleting an offcut used to leave hasUnsavedChanges untouched and silently ' +
+      'lose that data on newProject/loadProjectById',
+    async () => {
+      const useStore = await freshStore();
+      const materialId = useStore.getState().materials[0].id;
+      useStore.getState().saveProject();
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+      useStore.getState().addOffcut(materialId, 300, 200);
+      expect(useStore.getState().hasUnsavedChanges).toBe(true);
+
+      useStore.getState().saveProject();
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+      const offcutId = useStore.getState().offcutStock[0].id;
+      useStore.getState().removeOffcut(offcutId);
+      expect(useStore.getState().hasUnsavedChanges).toBe(true);
+    }
+  );
+
   it('redoing past the saved snapshot becomes true again', async () => {
     const useStore = await freshStore();
     const materialId = useStore.getState().materials[0].id;

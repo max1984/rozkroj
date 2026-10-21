@@ -133,10 +133,19 @@ function blankProject(language: Language, name?: string) {
   };
 }
 
-type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'algorithm' | 'projectName'>;
+type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'algorithm' | 'projectName' | 'offcutStock'>;
 
 // Same field selection as the temporal `partialize` option below (kept as
 // one function so the two can never drift apart).
+//
+// offcutStock is itself part of the saved project (exportProject/loadProject
+// round-trip it), but was missing here — addOffcut/removeOffcut ("Save
+// offcuts", the trash icon) never flipped hasUnsavedChanges, so a session
+// that only touched offcuts (a very normal flow: reopen an already-saved
+// project, run the optimizer, "Save offcuts", then start a new project)
+// got no "discard unsaved changes?" warning and silently lost that offcut
+// data — and wasn't undoable either, since this same list drives zundo's
+// partialize below.
 function undoTrackedFields(state: AppState): UndoTrackedFields {
   return {
     pieces: state.pieces,
@@ -144,6 +153,7 @@ function undoTrackedFields(state: AppState): UndoTrackedFields {
     settings: state.settings,
     algorithm: state.algorithm,
     projectName: state.projectName,
+    offcutStock: state.offcutStock,
   };
 }
 
