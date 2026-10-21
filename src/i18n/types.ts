@@ -81,6 +81,7 @@ export interface Translations {
   grainHorizontal: string;
   grainVertical: string;
   allowRotation: string;
+  rotationDisabledByGrainHint: string;
   priorityPiece: string;
   updateButton: string;
   addPieceButton: string;

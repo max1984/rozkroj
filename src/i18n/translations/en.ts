@@ -79,6 +79,7 @@ export const en: Translations = {
   grainHorizontal: 'Horizontal (width direction)',
   grainVertical: 'Vertical (height direction)',
   allowRotation: 'Allow rotation',
+  rotationDisabledByGrainHint: 'Rotation is automatically disabled when a grain direction is set',
   priorityPiece: 'Priority piece',
   updateButton: 'Update',
   addPieceButton: 'Add Piece',

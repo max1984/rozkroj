@@ -235,4 +235,23 @@ describe('PieceForm', () => {
     expect(screen.getByLabelText('Qty')).toBeTruthy();
     expect(screen.getByLabelText('Grain Direction')).toBeTruthy();
   });
+
+  it(
+    'regression: disables "Allow rotation" once a grain direction is set — optimizer.ts\'s ' +
+      "expandPieces() always forces rotationAllowed to false whenever grain !== 'none' " +
+      '(a grained piece can\'t be rotated 90° without the grain running the wrong way), so ' +
+      'leaving the checkbox interactive let a user check it and see it rendered as checked ' +
+      'with no indication the optimizer would silently disregard it',
+    () => {
+      render(<PieceForm onClose={vi.fn()} />);
+      const rotationCheckbox = screen.getByLabelText('Allow rotation') as HTMLInputElement;
+      expect(rotationCheckbox.disabled).toBe(false);
+
+      fireEvent.change(screen.getByLabelText('Grain Direction'), { target: { value: 'horizontal' } });
+      expect(rotationCheckbox.disabled).toBe(true);
+
+      fireEvent.change(screen.getByLabelText('Grain Direction'), { target: { value: 'none' } });
+      expect(rotationCheckbox.disabled).toBe(false);
+    }
+  );
 });

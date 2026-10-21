@@ -90,6 +90,7 @@ export const pl: Translations = {
   grainHorizontal: 'Poziomy (kierunek szerokości)',
   grainVertical: 'Pionowy (kierunek wysokości)',
   allowRotation: 'Zezwól na obrót',
+  rotationDisabledByGrainHint: 'Obrót jest automatycznie wyłączony, gdy ustawiony jest kierunek usłojenia',
   priorityPiece: 'Element priorytetowy',
   updateButton: 'Aktualizuj',
   addPieceButton: 'Dodaj element',

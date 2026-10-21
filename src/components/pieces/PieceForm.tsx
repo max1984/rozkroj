@@ -211,8 +211,24 @@ export function PieceForm({ editing, onClose }: Props) {
       </div>
 
       <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={rotationAllowed} onChange={e => setRotationAllowed(e.target.checked)} className="rounded accent-accent" />
+        {/* optimizer.ts's expandPieces() always forces rotationAllowed to
+            false whenever grain !== 'none' (a grained piece can't be rotated
+            90° without the grain running the wrong way) — it ignores the
+            stored field entirely in that case. Leaving this checkbox fully
+            interactive let a user check it while a grain direction was set
+            and see it rendered as checked, with no indication that the
+            optimizer would silently disregard it. */}
+        <label
+          className={`flex items-center gap-2 text-sm ${grain === 'none' ? 'cursor-pointer' : 'cursor-not-allowed text-muted'}`}
+          title={grain === 'none' ? undefined : t.rotationDisabledByGrainHint}
+        >
+          <input
+            type="checkbox"
+            checked={rotationAllowed}
+            disabled={grain !== 'none'}
+            onChange={e => setRotationAllowed(e.target.checked)}
+            className="rounded accent-accent"
+          />
           {t.allowRotation}
         </label>
         <label className="flex items-center gap-2 text-sm cursor-pointer">

@@ -79,6 +79,7 @@ export const de: Translations = {
   grainHorizontal: 'Horizontal (Breitenrichtung)',
   grainVertical: 'Vertikal (Höhenrichtung)',
   allowRotation: 'Drehung erlauben',
+  rotationDisabledByGrainHint: 'Die Drehung wird automatisch deaktiviert, wenn eine Faserrichtung festgelegt ist',
   priorityPiece: 'Prioritätsteil',
   updateButton: 'Aktualisieren',
   addPieceButton: 'Teil hinzufügen',
