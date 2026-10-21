@@ -50,6 +50,17 @@ export function PieceRow({ piece }: Props) {
         // is the standard role="button" + tabIndex + manual key handling
         // substitute, so the row stays reachable by Tab and operable via
         // Enter/Space like a real button, instead of only by mouse click.
+        //
+        // Keydown bubbles, so without this target check, pressing Enter/Space
+        // while focus was on one of the three real <button>s below (Edit/
+        // Duplicate/Delete) ALSO fired here: it toggled the row's selection
+        // instead, and via preventDefault, suppressed that button's own
+        // native Enter/Space-activates-click behavior — so e.g. pressing
+        // Enter on "Delete" with keyboard focus silently did nothing but
+        // toggle selection, never actually deleting the piece. Each button's
+        // onClick already stopPropagation()s the mouse-click equivalent of
+        // this; this is the keydown counterpart.
+        if (e.target !== e.currentTarget) return;
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           toggleSelected();

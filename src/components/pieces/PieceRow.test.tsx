@@ -105,6 +105,20 @@ describe('PieceRow', () => {
     expect(setSelectedPieceId).not.toHaveBeenCalled();
   });
 
+  it(
+    'regression: pressing Enter/Space while focus is on the Delete button must NOT toggle row ' +
+      "selection — keydown bubbles from that real <button> up to the row's own role=button " +
+      'onKeyDown, which used to fire unconditionally and wrongly toggle selection instead of ' +
+      "letting the button's native Enter/Space-activates-click behavior delete the piece",
+    () => {
+      const { container } = render(<PieceRow piece={piece()} />);
+      const deleteBtn = container.querySelectorAll('button')[2];
+      fireEvent.keyDown(deleteBtn, { key: 'Enter', bubbles: true });
+      fireEvent.keyDown(deleteBtn, { key: ' ', bubbles: true });
+      expect(setSelectedPieceId).not.toHaveBeenCalled();
+    }
+  );
+
   it('duplicates the piece without triggering row selection', () => {
     const { container } = render(<PieceRow piece={piece()} />);
     const duplicateBtn = container.querySelectorAll('button')[1];
