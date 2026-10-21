@@ -28,7 +28,21 @@ export function SummaryPanel() {
 
   const freshSheets = layout.sheets.filter(s => !s.sourceOffcutId).length;
   const offcutSheets = layout.sheets.length - freshSheets;
-  const bandingMm = totalBandingLengthMm(pieces);
+  // materialCost/materialUsage above already only count sheets actually
+  // cut — pieces that didn't fit (surfaced separately as "Unplaced") don't
+  // inflate it. totalBandingLengthMm(pieces) used the raw piece
+  // DEFINITIONS (full requested quantity) instead, so banding length was
+  // overstated by exactly the tape those same unplaced pieces would have
+  // needed, right next to a stat that's already telling the user they
+  // weren't cut this run.
+  const unplacedCounts = new Map<string, number>();
+  for (const u of layout.unplacedPieces) {
+    unplacedCounts.set(u.definitionId, (unplacedCounts.get(u.definitionId) ?? 0) + 1);
+  }
+  const placedOnlyPieces = pieces.map(p =>
+    unplacedCounts.has(p.id) ? { ...p, quantity: Math.max(0, p.quantity - unplacedCounts.get(p.id)!) } : p
+  );
+  const bandingMm = totalBandingLengthMm(placedOnlyPieces);
 
   return (
     <div className="flex flex-wrap items-center gap-x-8 gap-y-2 rounded-lg border border-line border-l-2 border-l-accent bg-surface-2 px-4 py-3">

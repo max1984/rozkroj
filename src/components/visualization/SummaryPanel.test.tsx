@@ -109,4 +109,24 @@ describe('SummaryPanel', () => {
     render(<SummaryPanel />);
     expect(screen.getByText('Edge banding')).toBeTruthy();
   });
+
+  it(
+    'regression: excludes unplaced pieces from the edge banding total — material cost already ' +
+      'only counts sheets actually cut, but banding length used the raw piece definitions ' +
+      "(full requested quantity), overstating the tape needed by exactly what the pieces that " +
+      "didn't fit (shown separately as Unplaced) would have required",
+    () => {
+      // 2 pieces of p1 (top banding, 100mm each → 200mm if both placed), one
+      // of them unplaced — only 100mm of tape is actually needed this run.
+      layout = baseLayout({ unplacedPieces: [{ definitionId: 'p1', instanceIndex: 1 }] });
+      pieces = [{
+        id: 'p1', name: 'A', materialId: 'm1', width: 100, height: 50, quantity: 2,
+        grain: 'none', rotationAllowed: true, priority: false,
+        edgeBanding: { top: true, right: false, bottom: false, left: false }, color: '#000',
+      }];
+      render(<SummaryPanel />);
+      expect(screen.getByText('100mm')).toBeTruthy();
+      expect(screen.queryByText('200mm')).toBeNull();
+    }
+  );
 });
