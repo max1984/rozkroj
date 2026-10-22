@@ -198,6 +198,37 @@ describe('store: materials', () => {
     expect(remaining).toHaveLength(1);
     expect(remaining[0].materialId).toBe(firstId);
   });
+
+  it(
+    'regression: addOffcuts adds a whole batch with exactly one recomputeLayout(), not one per item — ' +
+      "offcutStock itself feeds the optimizer (an offcut can become a new sheet), so OffcutStock.tsx's " +
+      '"Save offcuts" calling addOffcut once per leftover rect used to trigger one full, mostly-discarded ' +
+      'optimizer run per rect instead of a single recompute against the complete, final batch',
+    async () => {
+      const useStore = await freshStore();
+      const materialId = useStore.getState().materials[0].id;
+      const recomputeSpy = vi.spyOn(useStore.getState(), 'recomputeLayout');
+
+      useStore.getState().addOffcuts([
+        { materialId, width: 300, height: 200 },
+        { materialId, width: 150, height: 150 },
+      ]);
+
+      expect(recomputeSpy).toHaveBeenCalledTimes(1);
+      expect(useStore.getState().offcutStock).toHaveLength(2);
+      expect(useStore.getState().offcutStock.map(o => [o.width, o.height])).toEqual([[300, 200], [150, 150]]);
+    }
+  );
+
+  it('addOffcuts does nothing (not even an empty recompute) for an empty batch', async () => {
+    const useStore = await freshStore();
+    const recomputeSpy = vi.spyOn(useStore.getState(), 'recomputeLayout');
+
+    useStore.getState().addOffcuts([]);
+
+    expect(recomputeSpy).not.toHaveBeenCalled();
+    expect(useStore.getState().offcutStock).toHaveLength(0);
+  });
 });
 
 describe('store: settings', () => {

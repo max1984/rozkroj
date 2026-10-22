@@ -10,11 +10,11 @@ const materials: MaterialStock[] = [
   { id: 'm1', name: 'Chipboard', color: '#4e79a7', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
 ];
 const removeOffcut = vi.fn();
-const addOffcut = vi.fn();
+const addOffcuts = vi.fn();
 
 vi.mock('../../store', () => ({
   useStore: (selector: (s: Record<string, unknown>) => unknown) =>
-    selector({ offcutStock, layout, materials, removeOffcut, addOffcut }),
+    selector({ offcutStock, layout, materials, removeOffcut, addOffcuts }),
 }));
 
 vi.mock('../../hooks/useUnitDisplay', () => ({
@@ -61,7 +61,12 @@ describe('OffcutStock', () => {
     expect(screen.queryByText('Save offcuts')).toBeNull();
   });
 
-  it('saves every leftover free rect across all sheets when "Save offcuts" is clicked', () => {
+  it('saves every leftover free rect across all sheets in a single addOffcuts call when "Save offcuts" is clicked', () => {
+    // A single batched call (not one addOffcut per rect) — recomputeLayout()
+    // consumes offcutStock itself (optimizer.ts can pack pieces onto an
+    // offcut-sized sheet), so one call per rect used to trigger one full,
+    // mostly-discarded optimizer run per rect instead of a single recompute
+    // reflecting the whole batch.
     layout = {
       sheets: [
         sheet({ freeRects: [{ x: 0, y: 0, width: 300, height: 200 }] }),
@@ -71,9 +76,11 @@ describe('OffcutStock', () => {
     };
     render(<OffcutStock />);
     fireEvent.click(screen.getByText('Save offcuts'));
-    expect(addOffcut).toHaveBeenCalledTimes(2);
-    expect(addOffcut).toHaveBeenCalledWith('m1', 300, 200);
-    expect(addOffcut).toHaveBeenCalledWith('m1', 150, 150);
+    expect(addOffcuts).toHaveBeenCalledTimes(1);
+    expect(addOffcuts).toHaveBeenCalledWith([
+      { materialId: 'm1', width: 300, height: 200 },
+      { materialId: 'm1', width: 150, height: 150 },
+    ]);
   });
 
   it('does not re-save a free rect that already matches a saved offcut', () => {
@@ -84,8 +91,8 @@ describe('OffcutStock', () => {
     };
     render(<OffcutStock />);
     fireEvent.click(screen.getByText('Save offcuts'));
-    expect(addOffcut).toHaveBeenCalledTimes(1);
-    expect(addOffcut).toHaveBeenCalledWith('m1', 150, 150);
+    expect(addOffcuts).toHaveBeenCalledTimes(1);
+    expect(addOffcuts).toHaveBeenCalledWith([{ materialId: 'm1', width: 150, height: 150 }]);
   });
 
   it('hides "Save offcuts" once every leftover free rect has already been saved', () => {
@@ -113,8 +120,8 @@ describe('OffcutStock', () => {
     };
     render(<OffcutStock />);
     fireEvent.click(screen.getByText('Save offcuts'));
-    expect(addOffcut).toHaveBeenCalledTimes(1);
-    expect(addOffcut).toHaveBeenCalledWith('m1', 300, 200);
+    expect(addOffcuts).toHaveBeenCalledTimes(1);
+    expect(addOffcuts).toHaveBeenCalledWith([{ materialId: 'm1', width: 300, height: 200 }]);
   });
 
   it('exposes an accessible name for the icon-only remove button', () => {

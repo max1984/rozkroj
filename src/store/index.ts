@@ -100,6 +100,15 @@ interface AppState {
   confirmDiscardUnsaved: (message?: string) => boolean;
 
   addOffcut: (materialId: string, w: number, h: number) => void;
+  // Batched sibling of addOffcut for "Save offcuts": offcutStock is itself
+  // consumed by the optimizer (runOptimizer places pieces onto offcut-sized
+  // sheets, see optimizer.ts's sourceOffcutId), so calling addOffcut once per
+  // offcut in a loop triggered one full recomputeLayout() per item — each an
+  // expensive optimizer run whose result (but for the very last one) was
+  // immediately discarded, and whose GROWING offcutStock mid-loop could even
+  // let an earlier-added offcut get consumed by a later intermediate
+  // recompute before the rest of the batch had been added at all.
+  addOffcuts: (items: { materialId: string; width: number; height: number }[]) => void;
   removeOffcut: (id: string) => void;
 }
 
@@ -391,6 +400,18 @@ export const useStore = create<AppState>()(
       addOffcut: (materialId, w, h) => {
         set(state => ({
           offcutStock: [...state.offcutStock, { id: nanoid(), materialId, width: w, height: h, label: `${w}×${h} mm` }],
+        }));
+        get().recomputeLayout();
+      },
+      addOffcuts: (items) => {
+        if (items.length === 0) return;
+        set(state => ({
+          offcutStock: [
+            ...state.offcutStock,
+            ...items.map(({ materialId, width, height }) => (
+              { id: nanoid(), materialId, width, height, label: `${width}×${height} mm` }
+            )),
+          ],
         }));
         get().recomputeLayout();
       },

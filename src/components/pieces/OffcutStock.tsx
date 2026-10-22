@@ -9,7 +9,7 @@ export function OffcutStock() {
   const removeOffcut = useStore(s => s.removeOffcut);
   const layout = useStore(s => s.layout);
   const materials = useStore(s => s.materials);
-  const addOffcut = useStore(s => s.addOffcut);
+  const addOffcuts = useStore(s => s.addOffcuts);
   const { format } = useUnitDisplay();
 
   const offcutsFromLayout = layout?.sheets.flatMap(sh =>
@@ -45,7 +45,7 @@ export function OffcutStock() {
         {newOffcutsFromLayout.length > 0 && (
           <button
             className="text-xs text-accent hover:underline flex items-center gap-1"
-            onClick={() => newOffcutsFromLayout.forEach(r => addOffcut(r.materialId, r.width, r.height))}
+            onClick={() => addOffcuts(newOffcutsFromLayout.map(r => ({ materialId: r.materialId, width: r.width, height: r.height })))}
             title={t.saveOffcutsTitle}
           >
             <PackagePlus size={12} /> {t.saveOffcuts}
