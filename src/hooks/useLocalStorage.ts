@@ -33,7 +33,12 @@ export function useSaveLoad() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${project.name.replace(/\s+/g, '_')}.rozkroj.json`;
+    // Toolbar's rename field has no minimum-length validation, so projectName
+    // can be '' (or just whitespace) while mid-edit — without this fallback,
+    // the download's filename became exactly ".rozkroj.json", a HIDDEN file
+    // on macOS/Linux that's easy to lose track of in a Downloads folder.
+    const safeName = project.name.trim() || t.newProjectDefaultName;
+    a.download = `${safeName.replace(/\s+/g, '_')}.rozkroj.json`;
     a.click();
     URL.revokeObjectURL(url);
   };

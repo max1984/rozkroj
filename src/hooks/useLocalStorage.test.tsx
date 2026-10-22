@@ -11,12 +11,13 @@ const loadProject = vi.fn();
 // ProjectLibrary.test.tsx mocks newProject/duplicateProject/loadProjectById's
 // boolean return values instead of re-testing the confirmation dialog here.
 const confirmDiscardUnsaved = vi.fn(() => true);
+let exportedProjectName = 'My Project';
 
 vi.mock('../store', () => {
   const useStore = (selector: (s: {
     saveProject: typeof saveProject; loadProject: typeof loadProject; confirmDiscardUnsaved: typeof confirmDiscardUnsaved;
   }) => unknown) => selector({ saveProject, loadProject, confirmDiscardUnsaved });
-  useStore.getState = () => ({ exportProject: vi.fn(() => ({ name: 'My Project' })) });
+  useStore.getState = () => ({ exportProject: () => ({ name: exportedProjectName }) });
   return { useStore };
 });
 
@@ -94,4 +95,45 @@ describe('useSaveLoad.save', () => {
     result.current.save();
     expect(saveProject).toHaveBeenCalledTimes(1);
   });
+});
+
+describe('useSaveLoad.exportToFile', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    exportedProjectName = 'My Project';
+  });
+
+  function captureDownloadedName(): () => string {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    let downloadName = '';
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloadName = this.download;
+    });
+    return () => downloadName;
+  }
+
+  it('names the file after the project', () => {
+    const getDownloadName = captureDownloadedName();
+    const { result } = renderHook(() => useSaveLoad());
+
+    result.current.exportToFile();
+
+    expect(getDownloadName()).toBe('My_Project.rozkroj.json');
+  });
+
+  it(
+    'regression: falls back to the default project name instead of producing a HIDDEN ".rozkroj.json" ' +
+      "file — Toolbar's rename field has no minimum-length validation, so projectName can be '' while " +
+      "mid-edit, and the download's filename used to become exactly that empty name + extension",
+    () => {
+      exportedProjectName = '';
+      const getDownloadName = captureDownloadedName();
+      const { result } = renderHook(() => useSaveLoad());
+
+      result.current.exportToFile();
+
+      expect(getDownloadName()).toBe('New_Project.rozkroj.json');
+    }
+  );
 });
