@@ -18,7 +18,8 @@ export function edgesLabel(p: PieceDefinition): string {
 export async function generatePdf(
   layout: LayoutResult,
   project: Project,
-  allOnOnePage: boolean
+  allOnOnePage: boolean,
+  defaultName: string
 ): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pageW = 297;
@@ -168,5 +169,11 @@ export async function generatePdf(
     }
   }
 
-  doc.save(`${project.name.replace(/\s+/g, '_')}-cutlist.pdf`);
+  // Same "empty/whitespace project name -> confusing exported filename"
+  // bug already fixed for the JSON export (useLocalStorage.ts's
+  // exportToFile, safeName) — this was the sibling PDF export path that
+  // fix never reached: an unnamed project exported `-cutlist.pdf` instead
+  // of the usual, friendly default-name fallback.
+  const safeName = project.name.trim() || defaultName;
+  doc.save(`${safeName.replace(/\s+/g, '_')}-cutlist.pdf`);
 }

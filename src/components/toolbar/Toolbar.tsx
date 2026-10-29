@@ -53,7 +53,7 @@ export function Toolbar() {
       const currentLayout = useStore.getState().layout;
       if (!currentLayout) return;
       const project = useStore.getState().exportProject();
-      await generatePdf(currentLayout, project, pdfAllOnOne);
+      await generatePdf(currentLayout, project, pdfAllOnOne, t.newProjectDefaultName);
       setShowPdfOpts(false);
     } catch {
       alert(t.pdfGenerationFailed);
