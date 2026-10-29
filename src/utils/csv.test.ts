@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import Papa from 'papaparse';
 import { detectUnitFromHeaders, edgesFromString, edgesToString, importCsv, sanitizeCsvField } from './csv';
 import type { MaterialStock, PieceDefinition } from '../types';
 
@@ -108,7 +109,7 @@ describe('importCsv', () => {
     const file = new File([csv], 'test.csv', { type: 'text/csv' });
     const onDone = vi.fn();
 
-    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     const [pieces, unmatchedMaterialCount] = onDone.mock.calls[0];
@@ -123,7 +124,7 @@ describe('importCsv', () => {
     const file = new File([csv], 'test.csv', { type: 'text/csv' });
     const onDone = vi.fn();
 
-    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(onDone.mock.calls[0][1]).toBe(0);
@@ -134,7 +135,7 @@ describe('importCsv', () => {
     const file = new File([csv], 'test.csv', { type: 'text/csv' });
     const onDone = vi.fn();
 
-    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(onDone.mock.calls[0][1]).toBe(0);
@@ -149,7 +150,7 @@ describe('importCsv', () => {
     const file = new File([csv], 'test.csv', { type: 'text/csv' });
     const onDone = vi.fn();
 
-    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     const [pieces, , invalidDimensionCount] = onDone.mock.calls[0];
@@ -163,9 +164,50 @@ describe('importCsv', () => {
     const file = new File([csv], 'test.csv', { type: 'text/csv' });
     const onDone = vi.fn();
 
-    importCsv(file, 'mm', 0, materials, onDone, vi.fn());
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(onDone.mock.calls[0][0][0].quantity).toBe(1);
+  });
+
+  describe('error paths', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it(
+      'regression: reports the translated parseErrorMessage, not the raw Papa.parse error, ' +
+        "when the file itself can't be read — the untranslated err.message used to leak " +
+        'straight into the alert() shown to PL/DE users',
+      async () => {
+        vi.spyOn(Papa, 'parse').mockImplementation(((_file: File, config: { error: (err: { message: string }) => void }) => {
+          config.error({ message: 'raw I/O failure' });
+        }) as unknown as typeof Papa.parse);
+        const file = new File(['irrelevant'], 'test.csv', { type: 'text/csv' });
+        const onError = vi.fn();
+
+        importCsv(file, 'mm', 0, materials, vi.fn(), onError, 'Nie udało się wczytać pliku CSV.');
+
+        expect(onError).toHaveBeenCalledWith('Nie udało się wczytać pliku CSV.');
+      }
+    );
+
+    it(
+      'regression: reports the translated parseErrorMessage, not a hardcoded English string, ' +
+        'when processing the already-parsed rows throws',
+      async () => {
+        // result.data.forEach(...) throws on null — the same shape a
+        // genuinely malformed/unexpected parse result would take.
+        vi.spyOn(Papa, 'parse').mockImplementation(((_file: File, config: { complete: (r: { data: null; meta: object }) => void }) => {
+          config.complete({ data: null, meta: {} });
+        }) as unknown as typeof Papa.parse);
+        const file = new File(['irrelevant'], 'test.csv', { type: 'text/csv' });
+        const onError = vi.fn();
+
+        importCsv(file, 'mm', 0, materials, vi.fn(), onError, 'Nie udało się wczytać pliku CSV.');
+
+        expect(onError).toHaveBeenCalledWith('Nie udało się wczytać pliku CSV.');
+      }
+    );
   });
 });

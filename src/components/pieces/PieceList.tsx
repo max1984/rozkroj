@@ -33,7 +33,8 @@ export function PieceList() {
           alert(t.csvUnmatchedMaterialWarning(unmatchedMaterialCount));
         }
       },
-      (err) => alert(err)
+      (err) => alert(err),
+      t.csvParseError
     );
     e.target.value = '';
   };

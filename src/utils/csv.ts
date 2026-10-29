@@ -75,7 +75,8 @@ export function importCsv(
   existingCount: number,
   materials: MaterialStock[],
   onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number) => void,
-  onError: (msg: string) => void
+  onError: (msg: string) => void,
+  parseErrorMessage: string
 ): void {
   const defaultMaterialId = materials[0]?.id ?? '';
   const byName = new Map(materials.map(m => [m.name.toLowerCase(), m.id]));
@@ -128,9 +129,14 @@ export function importCsv(
         });
         onDone(pieces, unmatchedMaterialCount, invalidDimensionCount);
       } catch {
-        onError('Failed to parse CSV. Check column names.');
+        onError(parseErrorMessage);
       }
     },
-    error: (err) => onError(err.message),
+    // Surfaced as a plain alert() to the user (see PieceList.tsx) — the
+    // only other file-reading error path in this app, useLocalStorage.ts's
+    // project-JSON import, never shows the raw browser/library error
+    // message either, just a friendly translated string. err.message here
+    // was the one place that still leaked an untranslated, raw message.
+    error: () => onError(parseErrorMessage),
   });
 }
