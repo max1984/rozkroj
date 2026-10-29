@@ -38,7 +38,20 @@ export async function generatePdf(
   doc.text(project.name, margin, margin + 5);
   doc.setFontSize(9);
   const costLine = layout.totalCost > 0 ? ` | Material cost: ${formatCost(layout.totalCost)}` : '';
-  const bandingMm = totalBandingLengthMm(project.pieces);
+  // Same fix as SummaryPanel.tsx: totalBandingLengthMm(project.pieces) used the
+  // raw piece DEFINITIONS (full requested quantity), so this overstated the
+  // banding total by exactly the tape the pieces that didn't fit this run
+  // (layout.unplacedPieces) would have needed — on-screen this was already
+  // corrected, but the PDF (the actual cutting/ordering document) still printed
+  // the inflated figure.
+  const unplacedCounts = new Map<string, number>();
+  for (const u of layout.unplacedPieces) {
+    unplacedCounts.set(u.definitionId, (unplacedCounts.get(u.definitionId) ?? 0) + 1);
+  }
+  const placedOnlyPieces = project.pieces.map(p =>
+    unplacedCounts.has(p.id) ? { ...p, quantity: Math.max(0, p.quantity - unplacedCounts.get(p.id)!) } : p
+  );
+  const bandingMm = totalBandingLengthMm(placedOnlyPieces);
   const bandingLine = bandingMm > 0 ? ` | Edge banding: ${formatVal(Math.round(bandingMm))}` : '';
   doc.text(`Kerf: ${formatVal(project.settings.sawKerf)} | Sheets needed: ${layout.sheets.length} | Total waste: ${layout.totalWastePercent}%${costLine}${bandingLine}`, margin, margin + 12);
 

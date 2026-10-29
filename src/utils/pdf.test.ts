@@ -14,6 +14,7 @@ function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
 // libraries render, so these tests exercise generatePdf()'s OWN logic
 // (filename, table rows, sheet layout math) without needing a real canvas.
 let savedFilename = '';
+let textCalls: string[] = [];
 vi.mock('jspdf', () => ({
   default: class {
     lastAutoTable = { finalY: 0 };
@@ -22,7 +23,7 @@ vi.mock('jspdf', () => ({
     setFillColor() {}
     setDrawColor() {}
     setLineWidth() {}
-    text() {}
+    text(s: string) { textCalls.push(s); }
     rect() {}
     line() {}
     addPage() {}
@@ -48,6 +49,7 @@ function project(overrides: Partial<Project> = {}): Project {
 describe('generatePdf — exported filename', () => {
   afterEach(() => {
     savedFilename = '';
+    textCalls = [];
   });
 
   it('names the file after the project', async () => {
@@ -69,6 +71,34 @@ describe('generatePdf — exported filename', () => {
     await generatePdf(emptyLayout(), project({ name: '   ' }), false, 'New Project');
     expect(savedFilename).toBe('New_Project-cutlist.pdf');
   });
+});
+
+describe('generatePdf — edge banding total', () => {
+  afterEach(() => {
+    textCalls = [];
+  });
+
+  it(
+    'regression: totalBandingLengthMm(project.pieces) counted the full requested quantity, including ' +
+      "instances that didn't fit this run (layout.unplacedPieces) — the printed cut-list total was " +
+      'inflated by exactly the tape those unplaced instances would have needed, same bug already fixed ' +
+      'for the on-screen SummaryPanel but still present in the PDF (the actual cutting/ordering document)',
+    async () => {
+      const p = piece({ top: true, right: true, bottom: true, left: true });
+      p.quantity = 2; // 2 requested, only 1 fits this run
+      const layout: LayoutResult = {
+        ...emptyLayout(),
+        unplacedPieces: [{ definitionId: p.id, instanceIndex: 1 }],
+      };
+      await generatePdf(layout, project({ pieces: [p] }), false, 'New Project');
+
+      // Fully banded 100x100 piece: 400mm/instance. 2 requested but only 1
+      // placed — the printed total must reflect 400mm, not 800mm.
+      const summaryLine = textCalls.find(s => s.includes('Edge banding:'));
+      expect(summaryLine).toContain('400mm');
+      expect(summaryLine).not.toContain('800mm');
+    }
+  );
 });
 
 describe('edgesLabel', () => {
