@@ -31,7 +31,7 @@ export function ProjectLibrary() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <Dialog.Title className="text-sm font-semibold text-ink">{t.projectsHeading}</Dialog.Title>
             <Dialog.Close asChild>
-              <button className="p-1 rounded-md hover:bg-surface-2 text-muted">
+              <button className="p-1 rounded-md hover:bg-surface-2 text-muted" title={t.closeDialogTitle} aria-label={t.closeDialogTitle}>
                 <X size={15} />
               </button>
             </Dialog.Close>

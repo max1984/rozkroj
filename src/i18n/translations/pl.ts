@@ -32,6 +32,7 @@ export const pl: Translations = {
 
   // ProjectLibrary
   projectLibraryTitle: 'Biblioteka projektów',
+  closeDialogTitle: 'Zamknij',
   projectsHeading: 'Projekty',
   saveCurrent: 'Zapisz bieżący',
   newProject: 'Nowy',

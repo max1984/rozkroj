@@ -24,6 +24,7 @@ export interface Translations {
 
   // ProjectLibrary
   projectLibraryTitle: string;
+  closeDialogTitle: string;
   projectsHeading: string;
   saveCurrent: string;
   newProject: string;

@@ -22,6 +22,7 @@ export const en: Translations = {
 
   // ProjectLibrary
   projectLibraryTitle: 'Project library',
+  closeDialogTitle: 'Close',
   projectsHeading: 'Projects',
   saveCurrent: 'Save current',
   newProject: 'New',

@@ -43,6 +43,17 @@ afterEach(() => {
 });
 
 describe('ProjectLibrary', () => {
+  it(
+    'regression: the dialog close ("x") button has an accessible name — it used to be an icon with ' +
+      'no title/aria-label, the only unlabeled icon-only button left in the app (same bug class already ' +
+      'fixed once in App-ads\' loaded-url-clear button)',
+    () => {
+      render(<ProjectLibrary />);
+      fireEvent.click(screen.getByTitle('Project library'));
+      expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+    }
+  );
+
   it('shows an empty-state message when there are no saved projects', () => {
     render(<ProjectLibrary />);
     fireEvent.click(screen.getByTitle('Project library'));
