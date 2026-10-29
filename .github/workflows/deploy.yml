@@ -11,7 +11,14 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # false (not true): matches GitHub's own recommended Pages-deploy template,
+  # and App-ads' identical deploy.yml — cancelling a Pages deployment job
+  # mid-flight is a known way to leave the Pages environment's deployment
+  # lock stuck "in progress", blocking every subsequent deploy (including a
+  # later, good push) until it's cleared manually. Letting an in-flight
+  # deploy finish before the next one starts avoids that risk; GitHub still
+  # queues the newer push's run rather than dropping it.
+  cancel-in-progress: false
 
 jobs:
   deploy:
