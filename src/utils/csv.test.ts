@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Papa from 'papaparse';
-import { detectUnitFromHeaders, edgesFromString, edgesToString, importCsv, sanitizeCsvField } from './csv';
+import { detectUnitFromHeaders, edgesFromString, edgesToString, exportCsv, importCsv, sanitizeCsvField } from './csv';
 import type { MaterialStock, PieceDefinition } from '../types';
 
 function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
@@ -210,4 +210,33 @@ describe('importCsv', () => {
       }
     );
   });
+});
+
+describe('exportCsv', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it(
+    'defers revoking the download blob URL instead of revoking it synchronously right after ' +
+      'the click — some browsers read the blob asynchronously, so an immediate revoke can race ' +
+      'the download and silently abort it (same bug class already fixed for project export in ' +
+      'useLocalStorage.ts)',
+    () => {
+      vi.useFakeTimers();
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+      const materials: MaterialStock[] = [
+        { id: 'm1', name: 'Chipboard', color: '#000', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
+      ];
+
+      exportCsv([piece({ top: false, right: false, bottom: false, left: false })], materials, 'mm');
+      expect(revokeSpy).not.toHaveBeenCalled();
+
+      vi.runAllTimers();
+      expect(revokeSpy).toHaveBeenCalledWith('blob:mock');
+    }
+  );
 });

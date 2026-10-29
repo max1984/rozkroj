@@ -100,6 +100,7 @@ describe('useSaveLoad.save', () => {
 describe('useSaveLoad.exportToFile', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     exportedProjectName = 'My Project';
   });
 
@@ -134,6 +135,25 @@ describe('useSaveLoad.exportToFile', () => {
       result.current.exportToFile();
 
       expect(getDownloadName()).toBe('New_Project.rozkroj.json');
+    }
+  );
+
+  it(
+    'defers revoking the download blob URL instead of revoking it synchronously right after ' +
+      'the click — some browsers read the blob asynchronously, so an immediate revoke can race ' +
+      'the download and silently abort it',
+    () => {
+      vi.useFakeTimers();
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock');
+      const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+      const { result } = renderHook(() => useSaveLoad());
+
+      result.current.exportToFile();
+      expect(revokeSpy).not.toHaveBeenCalled();
+
+      vi.runAllTimers();
+      expect(revokeSpy).toHaveBeenCalledWith('blob:mock');
     }
   );
 });

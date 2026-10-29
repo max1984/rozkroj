@@ -66,7 +66,10 @@ export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[],
   a.href = url;
   a.download = 'cut-list.csv';
   a.click();
-  URL.revokeObjectURL(url);
+  // Some browsers (older Firefox/Safari) read the blob asynchronously after
+  // the click, so revoking the URL synchronously right after can race the
+  // read and silently abort the download — defer it a tick instead.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 export function importCsv(

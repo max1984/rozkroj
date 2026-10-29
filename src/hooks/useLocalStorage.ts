@@ -40,7 +40,10 @@ export function useSaveLoad() {
     const safeName = project.name.trim() || t.newProjectDefaultName;
     a.download = `${safeName.replace(/\s+/g, '_')}.rozkroj.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    // Some browsers (older Firefox/Safari) read the blob asynchronously after
+    // the click, so revoking the URL synchronously right after can race the
+    // read and silently abort the download — defer it a tick instead.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return { save, loadFromFile, exportToFile };
