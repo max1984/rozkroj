@@ -1,4 +1,5 @@
 import type { Translations } from '../types';
+import { MAX_PIECE_QUANTITY } from '../../constants/defaults';
 
 export const de: Translations = {
   // Toolbar
@@ -146,6 +147,8 @@ export const de: Translations = {
     `${count} Zeile${count !== 1 ? 'n' : ''} hatte${count !== 1 ? 'n' : ''} eine fehlende oder nicht-numerische Breite/Höhe und wurde${count !== 1 ? 'n' : ''} übersprungen.`,
   csvInvalidGrainWarning: (count) =>
     `${count} Teil${count !== 1 ? 'e' : ''} hatte${count !== 1 ? 'n' : ''} einen nicht erkannten Grain-Wert und wurde${count !== 1 ? 'n' : ''} stattdessen auf „keine" gesetzt.`,
+  csvExcessiveQuantityWarning: (count) =>
+    `${count} Zeile${count !== 1 ? 'n' : ''} hatte${count !== 1 ? 'n' : ''} eine Menge über ${MAX_PIECE_QUANTITY} und wurde${count !== 1 ? 'n' : ''} auf dieses Limit begrenzt.`,
   csvParseError: 'CSV-Datei konnte nicht gelesen werden. Überprüfen Sie die Spaltennamen.',
   pdfGenerationFailed: 'PDF-Erstellung fehlgeschlagen. Falls die App gerade aktualisiert wurde, laden Sie die Seite neu.',
 };

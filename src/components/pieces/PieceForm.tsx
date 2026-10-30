@@ -2,7 +2,7 @@ import { useId, useState, useEffect, useRef } from 'react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { EdgeBandingPicker } from './EdgeBandingPicker';
-import { DEFAULT_EDGE_BANDING } from '../../constants/defaults';
+import { DEFAULT_EDGE_BANDING, MAX_PIECE_QUANTITY } from '../../constants/defaults';
 import { parsePositiveInt } from '../../utils/validation';
 import { useTranslation } from '../../hooks/useTranslation';
 import { toMm as toMmInUnit, formatInputValue } from '../../utils/units';
@@ -114,7 +114,7 @@ export function PieceForm({ editing, onClose }: Props) {
     e.preventDefault();
     const w = toMm(parseFloat(width));
     const h = toMm(parseFloat(height));
-    const quantity = parsePositiveInt(qty);
+    const quantity = parsePositiveInt(qty, MAX_PIECE_QUANTITY);
     if (!w || !h || w <= 0 || h <= 0 || quantity === null) return;
 
     if (editing) {
@@ -189,6 +189,7 @@ export function PieceForm({ editing, onClose }: Props) {
             required
             type="number"
             min="1"
+            max={MAX_PIECE_QUANTITY}
             className="field font-mono tabular-nums"
             value={qty}
             onChange={e => setQty(e.target.value)}

@@ -37,4 +37,16 @@ describe('parsePositiveInt', () => {
   it('rejects a number with trailing junk', () => {
     expect(parsePositiveInt('5x')).toBeNull();
   });
+
+  it('has no upper bound by default', () => {
+    expect(parsePositiveInt('999999999')).toBe(999999999);
+  });
+
+  it('rejects a value above an explicit max', () => {
+    expect(parsePositiveInt('1001', 1000)).toBeNull();
+  });
+
+  it('accepts a value exactly at an explicit max', () => {
+    expect(parsePositiveInt('1000', 1000)).toBe(1000);
+  });
 });

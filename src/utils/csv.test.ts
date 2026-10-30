@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Papa from 'papaparse';
 import { detectUnitFromHeaders, edgesFromString, edgesToString, exportCsv, importCsv, sanitizeCsvField } from './csv';
+import { MAX_PIECE_QUANTITY } from '../constants/defaults';
 import type { MaterialStock, PieceDefinition } from '../types';
 
 function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
@@ -207,6 +208,37 @@ describe('importCsv', () => {
 
     await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
     expect(onDone.mock.calls[0][0][0].quantity).toBe(1);
+  });
+
+  it(
+    'regression: a Quantity cell wildly above MAX_PIECE_QUANTITY (typo\'d extra digit, hand-edited/foreign ' +
+      'export) used to pass straight through to the piece — expandPieces() in optimizer.ts loops that many ' +
+      'times per piece to build packable instances, so an unbounded value freezes the tab instead of warning',
+    async () => {
+      const csv = 'Name,Width (mm),Height (mm),Quantity\nShelf,600,400,50000\n';
+      const file = new File([csv], 'test.csv', { type: 'text/csv' });
+      const onDone = vi.fn();
+
+      importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
+
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+      const [pieces, , , , excessiveQuantityCount] = onDone.mock.calls[0];
+      expect(pieces[0].quantity).toBe(MAX_PIECE_QUANTITY);
+      expect(excessiveQuantityCount).toBe(1);
+    }
+  );
+
+  it('does not count a Quantity at or below MAX_PIECE_QUANTITY as excessive', async () => {
+    const csv = `Name,Width (mm),Height (mm),Quantity\nShelf,600,400,${MAX_PIECE_QUANTITY}\n`;
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    const [pieces, , , , excessiveQuantityCount] = onDone.mock.calls[0];
+    expect(pieces[0].quantity).toBe(MAX_PIECE_QUANTITY);
+    expect(excessiveQuantityCount).toBe(0);
   });
 
   describe('error paths', () => {

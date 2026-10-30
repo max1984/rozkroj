@@ -1,4 +1,5 @@
 import type { Translations } from '../types';
+import { MAX_PIECE_QUANTITY } from '../../constants/defaults';
 
 const pluralRules = new Intl.PluralRules('pl');
 
@@ -179,6 +180,13 @@ export const pl: Translations = {
       `${count} elementy miały`,
       `${count} elementów miało`
     )} nierozpoznaną wartość w kolumnie Grain i ${polishForm(count, 'został ustawiony', 'zostały ustawione', 'zostało ustawionych')} na „brak usłojenia".`,
+  csvExcessiveQuantityWarning: (count) =>
+    `${polishForm(
+      count,
+      `${count} wiersz miał`,
+      `${count} wiersze miały`,
+      `${count} wierszy miało`
+    )} ilość większą niż ${MAX_PIECE_QUANTITY} i ${polishForm(count, 'został przycięty', 'zostały przycięte', 'zostało przyciętych')} do tego limitu.`,
   csvParseError: 'Nie udało się wczytać pliku CSV. Sprawdź nazwy kolumn.',
   pdfGenerationFailed: 'Nie udało się wygenerować pliku PDF. Jeśli aplikacja została właśnie zaktualizowana, spróbuj odświeżyć stronę.',
 };

@@ -145,6 +145,7 @@ export interface Translations {
   csvUnmatchedMaterialWarning: (count: number) => string;
   csvInvalidDimensionWarning: (count: number) => string;
   csvInvalidGrainWarning: (count: number) => string;
+  csvExcessiveQuantityWarning: (count: number) => string;
   csvParseError: string;
   pdfGenerationFailed: string;
 }

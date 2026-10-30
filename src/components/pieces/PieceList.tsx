@@ -24,7 +24,7 @@ export function PieceList() {
       materials,
       // Read pieces fresh at completion time rather than closing over the
       // render-time value, since CSV parsing finishes asynchronously.
-      (imported, unmatchedMaterialCount, invalidDimensionCount, invalidGrainCount) => {
+      (imported, unmatchedMaterialCount, invalidDimensionCount, invalidGrainCount, excessiveQuantityCount) => {
         setPieces([...useStore.getState().pieces, ...imported]);
         if (invalidDimensionCount > 0) {
           alert(t.csvInvalidDimensionWarning(invalidDimensionCount));
@@ -34,6 +34,9 @@ export function PieceList() {
         }
         if (invalidGrainCount > 0) {
           alert(t.csvInvalidGrainWarning(invalidGrainCount));
+        }
+        if (excessiveQuantityCount > 0) {
+          alert(t.csvExcessiveQuantityWarning(excessiveQuantityCount));
         }
       },
       (err) => alert(err),

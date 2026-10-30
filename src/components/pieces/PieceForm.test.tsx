@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { PieceForm } from './PieceForm';
 import { toMm, formatInputValue } from '../../utils/units';
+import { MAX_PIECE_QUANTITY } from '../../constants/defaults';
 import type { MaterialStock } from '../../types';
 
 const material: MaterialStock = {
@@ -178,6 +179,30 @@ describe('PieceForm', () => {
     fillAndSubmit(container, { width: '600', height: '400', qty: '0' });
 
     expect(addPiece).not.toHaveBeenCalled();
+  });
+
+  it(
+    'regression: quantity had no upper bound — expandPieces() in optimizer.ts loops that many times ' +
+      'per piece to build packable instances, so a stray extra digit (or a pasted huge value) froze the ' +
+      'tab instead of being rejected like any other invalid field in this form',
+    () => {
+      const onClose = vi.fn();
+      const { container } = render(<PieceForm onClose={onClose} />);
+
+      fillAndSubmit(container, { width: '600', height: '400', qty: String(MAX_PIECE_QUANTITY + 1) });
+
+      expect(addPiece).not.toHaveBeenCalled();
+    }
+  );
+
+  it('submits when quantity is exactly at the upper bound', () => {
+    const onClose = vi.fn();
+    const { container } = render(<PieceForm onClose={onClose} />);
+
+    fillAndSubmit(container, { width: '600', height: '400', qty: String(MAX_PIECE_QUANTITY) });
+
+    expect(addPiece).toHaveBeenCalled();
+    expect(addPiece.mock.calls[0][0]).toMatchObject({ quantity: MAX_PIECE_QUANTITY });
   });
 
   it('does not submit when width is zero', () => {

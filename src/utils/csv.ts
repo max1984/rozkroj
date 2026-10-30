@@ -3,6 +3,7 @@ import type { PieceDefinition, MaterialStock } from '../types';
 import { toMm } from './units';
 import { getPieceColor } from './colors';
 import { parsePositiveInt } from './validation';
+import { MAX_PIECE_QUANTITY } from '../constants/defaults';
 import { nanoid } from 'nanoid';
 
 /**
@@ -79,7 +80,7 @@ export function importCsv(
   unit: 'mm' | 'inch',
   existingCount: number,
   materials: MaterialStock[],
-  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number, invalidGrainCount: number) => void,
+  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number, invalidGrainCount: number, excessiveQuantityCount: number) => void,
   onError: (msg: string) => void,
   parseErrorMessage: string
 ): void {
@@ -95,6 +96,7 @@ export function importCsv(
         let unmatchedMaterialCount = 0;
         let invalidDimensionCount = 0;
         let invalidGrainCount = 0;
+        let excessiveQuantityCount = 0;
         const pieces: PieceDefinition[] = [];
         (result.data as Record<string, string>[]).forEach((row, i) => {
           const name = row['Name'] || `Piece ${existingCount + i + 1}`;
@@ -143,7 +145,21 @@ export function importCsv(
             // Same rule as the manual add-piece form: a non-integer or missing
             // cell used to reach parseInt() directly, which produced NaN (not
             // the same gap as a missing column, which legitimately defaults to 1).
-            quantity: parsePositiveInt(row['Quantity'] ?? '') ?? 1,
+            // A WILDLY excessive one (typo'd extra digit, hand-edited/foreign
+            // export) is clamped rather than dropped to 1 like a genuinely
+            // unparseable cell — the row still gets a usable, placeable
+            // quantity instead of losing almost all of it — but still counted
+            // so the user knows the file asked for more than this clamp allows
+            // (expandPieces() in optimizer.ts loops `quantity` times per piece;
+            // unclamped, a huge value freezes the tab trying to pack it).
+            quantity: (() => {
+              const n = parsePositiveInt(row['Quantity'] ?? '');
+              if (n !== null && n > MAX_PIECE_QUANTITY) {
+                excessiveQuantityCount++;
+                return MAX_PIECE_QUANTITY;
+              }
+              return n ?? 1;
+            })(),
             grain,
             rotationAllowed: row['RotationAllowed']?.toLowerCase() !== 'false',
             priority: row['Priority']?.toLowerCase() === 'true',
@@ -151,7 +167,7 @@ export function importCsv(
             color: getPieceColor(existingCount + i),
           });
         });
-        onDone(pieces, unmatchedMaterialCount, invalidDimensionCount, invalidGrainCount);
+        onDone(pieces, unmatchedMaterialCount, invalidDimensionCount, invalidGrainCount, excessiveQuantityCount);
       } catch {
         onError(parseErrorMessage);
       }
