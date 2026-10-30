@@ -3,6 +3,7 @@ import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
 import { useStore } from '../../store';
 import type { SheetLayout } from '../../types';
 import { mapEdgeBandingForRotation } from '../../utils/edgeBanding';
+import { gridIntervalMm } from '../../utils/canvasGrid';
 
 interface Props {
   sheet: SheetLayout;
@@ -32,7 +33,7 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
   const canvasH = Math.round(sheetHeight * scale);
 
   const pieceMap = new Map(pieces.map(p => [p.id, p]));
-  const gridStep = sheetWidth > 2000 ? 200 : 100; // mm
+  const gridStep = gridIntervalMm(sheetWidth); // mm
 
   return (
     <div className="overflow-auto">
@@ -131,7 +132,7 @@ function EdgeBandingOverlay({ banding, x, y, w, h, color }: { banding: { top: bo
 }
 
 function RulerBottom({ sheetWidth, canvasH, scale, color }: { sheetWidth: number; canvasH: number; scale: number; color: string }) {
-  const tickInterval = sheetWidth > 2000 ? 200 : sheetWidth > 1000 ? 100 : 50; // mm
+  const tickInterval = gridIntervalMm(sheetWidth); // mm
   const ticks: number[] = [];
   for (let mm = 0; mm <= sheetWidth; mm += tickInterval) ticks.push(mm);
 
