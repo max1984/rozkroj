@@ -142,7 +142,7 @@ function blankProject(language: Language, name?: string) {
   };
 }
 
-type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'algorithm' | 'projectName' | 'offcutStock'>;
+type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'algorithm' | 'projectName' | 'offcutStock' | 'unit'>;
 
 // Same field selection as the temporal `partialize` option below (kept as
 // one function so the two can never drift apart).
@@ -155,6 +155,13 @@ type UndoTrackedFields = Pick<AppState, 'pieces' | 'materials' | 'settings' | 'a
 // got no "discard unsaved changes?" warning and silently lost that offcut
 // data — and wasn't undoable either, since this same list drives zundo's
 // partialize below.
+//
+// unit had the exact same gap: it's also round-tripped by exportProject/
+// loadProject (a project genuinely remembers whether it was last edited in
+// mm or inch), but setUnit() (UnitToggle) was missing from this list too —
+// switching a project's unit left hasUnsavedChanges false, so "New
+// Project"/"Load Project" would silently discard that choice with no
+// confirmation prompt, and Cmd+Z wouldn't undo an accidental toggle either.
 function undoTrackedFields(state: AppState): UndoTrackedFields {
   return {
     pieces: state.pieces,
@@ -163,6 +170,7 @@ function undoTrackedFields(state: AppState): UndoTrackedFields {
     algorithm: state.algorithm,
     projectName: state.projectName,
     offcutStock: state.offcutStock,
+    unit: state.unit,
   };
 }
 
@@ -432,7 +440,7 @@ export const useStore = create<AppState>()(
       },
     }),
     {
-      // Only track pieces, materials, settings, algorithm in undo history
+      // See undoTrackedFields above for exactly which fields this tracks.
       partialize: undoTrackedFields,
       // Without this, every set() call — including ones that only touch
       // untracked fields like layout, selectedPieceId, or hoveredPieceId (so

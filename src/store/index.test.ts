@@ -369,6 +369,24 @@ describe('store: hasUnsavedChanges', () => {
     }
   );
 
+  it(
+    'regression: setUnit marks the project dirty — unit was missing from undoTrackedFields even though ' +
+      'it is part of the saved project (exportProject/loadProject round-trip it), so toggling mm/inch used ' +
+      'to leave hasUnsavedChanges untouched and silently lose that choice on newProject/loadProjectById',
+    async () => {
+      const useStore = await freshStore();
+      useStore.getState().saveProject();
+      expect(useStore.getState().hasUnsavedChanges).toBe(false);
+
+      // freshStore() stubs navigator as 'en-US', so getLastUnit() seeds a
+      // blank project with 'inch' (see unitPreference.ts) — switch to the
+      // other unit explicitly instead of assuming 'mm' is the starting value.
+      const otherUnit = useStore.getState().unit === 'mm' ? 'inch' : 'mm';
+      useStore.getState().setUnit(otherUnit);
+      expect(useStore.getState().hasUnsavedChanges).toBe(true);
+    }
+  );
+
   it('redoing past the saved snapshot becomes true again', async () => {
     const useStore = await freshStore();
     const materialId = useStore.getState().materials[0].id;
