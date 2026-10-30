@@ -170,6 +170,42 @@ describe('Toolbar', () => {
     expect(H.exportProject).toHaveBeenCalledTimes(1);
   });
 
+  it('closes the PDF options panel on an outside click, unlike a toggle requiring a second click on the button', () => {
+    H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
+    render(<Toolbar />);
+    const pdfBtn = screen.getByText('PDF').closest('button')!;
+    fireEvent.click(pdfBtn);
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.mouseDown(document.body);
+
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByText('Download PDF')).toBeNull();
+  });
+
+  it('closes the PDF options panel on Escape', () => {
+    H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
+    render(<Toolbar />);
+    const pdfBtn = screen.getByText('PDF').closest('button')!;
+    fireEvent.click(pdfBtn);
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('does not close the PDF options panel on a click inside it (e.g. the "all sheets on one page" checkbox)', () => {
+    H.mutable.layout = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
+    render(<Toolbar />);
+    const pdfBtn = screen.getByText('PDF').closest('button')!;
+    fireEvent.click(pdfBtn);
+
+    fireEvent.mouseDown(screen.getByRole('checkbox'));
+
+    expect(pdfBtn.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('reads a fresh layout at generation time instead of the one captured when the Export button was clicked', async () => {
     const oldLayout: LayoutResult = { sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }], unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0 };
     const newLayout: LayoutResult = { ...oldLayout, computedAt: 1 };

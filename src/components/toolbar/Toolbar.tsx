@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Undo2, Redo2, Save, FolderOpen, Download, FileDown, Sun, Moon } from 'lucide-react';
 import { useStore as useZustand } from 'zustand';
 import { useStore } from '../../store';
@@ -30,6 +30,29 @@ export function Toolbar() {
   const { save, loadFromFile, exportToFile } = useSaveLoad();
   const [pdfAllOnOne, setPdfAllOnOne] = useState(false);
   const [showPdfOpts, setShowPdfOpts] = useState(false);
+  const pdfPopoverRef = useRef<HTMLDivElement>(null);
+
+  // ProjectLibrary's dialog (Radix) already closes on outside click and
+  // Escape for free — this hand-rolled popover had neither, so the ONLY way
+  // to back out of it (without actually generating a PDF) was clicking the
+  // "PDF" button a second time. Scoped to a plain document listener instead
+  // of Radix's Popover (not a current dependency here, unlike its Dialog)
+  // to keep this fix to the existing toggle state rather than a library swap.
+  useEffect(() => {
+    if (!showPdfOpts) return;
+    const closeIfOutside = (e: MouseEvent) => {
+      if (!pdfPopoverRef.current?.contains(e.target as Node)) setShowPdfOpts(false);
+    };
+    const closeOnEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowPdfOpts(false);
+    };
+    document.addEventListener('mousedown', closeIfOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeIfOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showPdfOpts]);
 
   const { undo, redo, pastStates, futureStates } = useZustand(useStore.temporal);
 
@@ -143,7 +166,7 @@ export function Toolbar() {
       </button>
 
       {/* PDF */}
-      <div className="relative">
+      <div className="relative" ref={pdfPopoverRef}>
         <button
           onClick={() => setShowPdfOpts(v => !v)}
           disabled={!layout || layout.sheets.length === 0}
