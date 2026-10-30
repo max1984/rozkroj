@@ -14,12 +14,13 @@ interface Temporal {
 const H = vi.hoisted(() => ({
   undo: vi.fn(),
   redo: vi.fn(),
-  mutable: { darkMode: false, hasUnsavedChanges: false },
+  mutable: { darkMode: false, hasUnsavedChanges: false, language: 'en' as 'en' | 'pl' | 'de' },
   temporalStoreRef: { current: null as UseBoundStore<StoreApi<Temporal>> | null },
 }));
 
 vi.mock('./store', () => {
-  const useStore = (selector: (s: { darkMode: boolean }) => unknown) => selector({ darkMode: H.mutable.darkMode });
+  const useStore = (selector: (s: { darkMode: boolean; language: string }) => unknown) =>
+    selector({ darkMode: H.mutable.darkMode, language: H.mutable.language });
   useStore.getState = () => ({ hasUnsavedChanges: H.mutable.hasUnsavedChanges });
   Object.defineProperty(useStore, 'temporal', { get: () => H.temporalStoreRef.current });
   return { useStore };
@@ -37,7 +38,9 @@ afterEach(() => {
   vi.clearAllMocks();
   H.mutable.darkMode = false;
   H.mutable.hasUnsavedChanges = false;
+  H.mutable.language = 'en';
   document.documentElement.classList.remove('dark');
+  document.documentElement.lang = 'en';
 });
 
 describe('App', () => {
@@ -50,6 +53,17 @@ describe('App', () => {
   it('does not add the dark class when darkMode is off', () => {
     render(<App />);
     expect(document.documentElement.classList.contains('dark')).toBe(false);
+  });
+
+  it('sets the document lang attribute to the current language', () => {
+    H.mutable.language = 'pl';
+    render(<App />);
+    expect(document.documentElement.lang).toBe('pl');
+  });
+
+  it('defaults the document lang attribute to en', () => {
+    render(<App />);
+    expect(document.documentElement.lang).toBe('en');
   });
 
   it('undoes on Cmd/Ctrl+Z outside of a text field', () => {

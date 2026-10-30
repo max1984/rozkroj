@@ -9,11 +9,21 @@ import { SummaryPanel } from './components/visualization/SummaryPanel';
 
 export default function App() {
   const darkMode = useStore(s => s.darkMode);
+  const language = useStore(s => s.language);
   const { undo, redo } = useZustand(useStore.temporal);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
   }, [darkMode]);
+
+  useEffect(() => {
+    // The static `lang="en"` in index.html never otherwise updates — left
+    // stale after switching to pl/de, it tells screen readers to apply
+    // English pronunciation rules to the translated UI, and tells crawlers
+    // the page is in English when it isn't (same fix cwaniak's LangContext
+    // already applies for its own language switcher).
+    document.documentElement.lang = language;
+  }, [language]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
