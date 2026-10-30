@@ -171,6 +171,13 @@ export const pl: Translations = {
       `${count} wiersze miały`,
       `${count} wierszy miało`
     )} brakującą lub nienumeryczną szerokość/wysokość i ${polishForm(count, 'został pominięty', 'zostały pominięte', 'zostało pominiętych')} przy imporcie.`,
+  csvInvalidGrainWarning: (count) =>
+    `${polishForm(
+      count,
+      `${count} element miał`,
+      `${count} elementy miały`,
+      `${count} elementów miało`
+    )} nierozpoznaną wartość w kolumnie Grain i ${polishForm(count, 'został ustawiony', 'zostały ustawione', 'zostało ustawionych')} na „brak usłojenia".`,
   csvParseError: 'Nie udało się wczytać pliku CSV. Sprawdź nazwy kolumn.',
   pdfGenerationFailed: 'Nie udało się wygenerować pliku PDF. Jeśli aplikacja została właśnie zaktualizowana, spróbuj odświeżyć stronę.',
 };

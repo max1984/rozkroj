@@ -143,6 +143,8 @@ export const en: Translations = {
     `${count} piece${count !== 1 ? 's' : ''} had a Material that didn't match any existing material and ${count !== 1 ? 'were' : 'was'} assigned to the default instead.`,
   csvInvalidDimensionWarning: (count) =>
     `${count} row${count !== 1 ? 's' : ''} had a missing or non-numeric Width/Height and ${count !== 1 ? 'were' : 'was'} skipped.`,
+  csvInvalidGrainWarning: (count) =>
+    `${count} piece${count !== 1 ? 's' : ''} had an unrecognized Grain value and ${count !== 1 ? 'were' : 'was'} set to "none" instead.`,
   csvParseError: 'Failed to parse CSV. Check column names.',
   pdfGenerationFailed: 'Failed to generate the PDF. If the app was just updated, try reloading the page.',
 };

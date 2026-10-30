@@ -143,6 +143,7 @@ export interface Translations {
   couldNotReadFile: string;
   csvUnmatchedMaterialWarning: (count: number) => string;
   csvInvalidDimensionWarning: (count: number) => string;
+  csvInvalidGrainWarning: (count: number) => string;
   csvParseError: string;
   pdfGenerationFailed: string;
 }

@@ -159,6 +159,45 @@ describe('importCsv', () => {
     expect(invalidDimensionCount).toBe(2);
   });
 
+  it(
+    'regression: an unrecognized Grain cell used to be cast straight through with `as PieceDefinition[\'grain\']` ' +
+      '— a compile-time-only cast, so a typo or hand-edited CSV silently stored a value outside the actual ' +
+      '\'none\'|\'horizontal\'|\'vertical\' union with no warning, unlike its two siblings right next to it ' +
+      '(unmatched Material, invalid dimensions)',
+    async () => {
+      const csv = 'Name,Width (mm),Height (mm),Quantity,Grain\n'
+        + 'Good,600,400,1,horizontal\n'
+        + 'Typo,600,400,1,diagonal\n';
+      const file = new File([csv], 'test.csv', { type: 'text/csv' });
+      const onDone = vi.fn();
+
+      importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
+
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+      const [pieces, , , invalidGrainCount] = onDone.mock.calls[0];
+      expect(pieces).toHaveLength(2);
+      expect(pieces[0].grain).toBe('horizontal');
+      expect(pieces[1].grain).toBe('none');
+      expect(invalidGrainCount).toBe(1);
+    }
+  );
+
+  it('does not count a blank or valid Grain cell as invalid', async () => {
+    const csv = 'Name,Width (mm),Height (mm),Quantity,Grain\n'
+      + 'NoGrain,600,400,1,\n'
+      + 'Vertical,600,400,1,VERTICAL\n';
+    const file = new File([csv], 'test.csv', { type: 'text/csv' });
+    const onDone = vi.fn();
+
+    importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
+
+    await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+    const [pieces, , , invalidGrainCount] = onDone.mock.calls[0];
+    expect(invalidGrainCount).toBe(0);
+    expect(pieces[0].grain).toBe('none');
+    expect(pieces[1].grain).toBe('vertical');
+  });
+
   it('falls back to a quantity of 1 instead of NaN when the Quantity cell is not a positive integer', async () => {
     const csv = 'Name,Width (mm),Height (mm),Quantity\nShelf,600,400,abc\n';
     const file = new File([csv], 'test.csv', { type: 'text/csv' });

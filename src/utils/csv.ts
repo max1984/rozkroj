@@ -72,12 +72,14 @@ export function exportCsv(pieces: PieceDefinition[], materials: MaterialStock[],
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+const VALID_GRAINS = new Set<PieceDefinition['grain']>(['none', 'horizontal', 'vertical']);
+
 export function importCsv(
   file: File,
   unit: 'mm' | 'inch',
   existingCount: number,
   materials: MaterialStock[],
-  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number) => void,
+  onDone: (pieces: PieceDefinition[], unmatchedMaterialCount: number, invalidDimensionCount: number, invalidGrainCount: number) => void,
   onError: (msg: string) => void,
   parseErrorMessage: string
 ): void {
@@ -92,6 +94,7 @@ export function importCsv(
         const csvUnit = detectUnitFromHeaders(result.meta.fields, unit);
         let unmatchedMaterialCount = 0;
         let invalidDimensionCount = 0;
+        let invalidGrainCount = 0;
         const pieces: PieceDefinition[] = [];
         (result.data as Record<string, string>[]).forEach((row, i) => {
           const name = row['Name'] || `Piece ${existingCount + i + 1}`;
@@ -113,6 +116,24 @@ export function importCsv(
           // the user that the assignment didn't actually come from the file.
           if (materialCell && !matchedId) unmatchedMaterialCount++;
           const materialId = matchedId ?? defaultMaterialId;
+          // An unrecognized Grain cell (typo, different app's export, hand-edited
+          // file) used to be cast straight through with `as PieceDefinition['grain']`
+          // — TypeScript's cast is compile-time only, so at runtime the piece
+          // silently carried a value outside the type's actual union. Nothing
+          // crashed (optimizer.ts's `grain === 'none'` check just treats any
+          // unrecognized string the same as "has grain"), but PieceForm.tsx's
+          // <select> then showed no option selected for that piece with no
+          // explanation, unlike its two siblings right here (unmatched material,
+          // invalid dimension) which already warn instead of failing silently.
+          const grainRaw = (row['Grain'] || '').trim().toLowerCase();
+          let grain: PieceDefinition['grain'] = 'none';
+          if (grainRaw) {
+            if (VALID_GRAINS.has(grainRaw as PieceDefinition['grain'])) {
+              grain = grainRaw as PieceDefinition['grain'];
+            } else {
+              invalidGrainCount++;
+            }
+          }
           pieces.push({
             id: nanoid(),
             name,
@@ -123,14 +144,14 @@ export function importCsv(
             // cell used to reach parseInt() directly, which produced NaN (not
             // the same gap as a missing column, which legitimately defaults to 1).
             quantity: parsePositiveInt(row['Quantity'] ?? '') ?? 1,
-            grain: (row['Grain'] as PieceDefinition['grain']) || 'none',
+            grain,
             rotationAllowed: row['RotationAllowed']?.toLowerCase() !== 'false',
             priority: row['Priority']?.toLowerCase() === 'true',
             edgeBanding: edgesFromString(row['EdgeBanding']),
             color: getPieceColor(existingCount + i),
           });
         });
-        onDone(pieces, unmatchedMaterialCount, invalidDimensionCount);
+        onDone(pieces, unmatchedMaterialCount, invalidDimensionCount, invalidGrainCount);
       } catch {
         onError(parseErrorMessage);
       }
