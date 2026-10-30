@@ -176,6 +176,21 @@ describe('migrateProject', () => {
     expect(result.pieces).toEqual([]);
   });
 
+  it('drops an offcutStock entry whose materialId matches no material, instead of leaving it orphaned', () => {
+    const validOffcut = { id: 'o1', materialId: 'm1', width: 100, height: 100, label: 'Scrap' };
+    const orphanOffcut = { id: 'o2', materialId: 'deleted-material-id', width: 200, height: 200, label: 'Scrap' };
+    const raw = {
+      settings: {},
+      materials: [currentMaterial({ id: 'm1' })],
+      pieces: [],
+      offcutStock: [validOffcut, orphanOffcut],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.offcutStock).toEqual([validOffcut]);
+  });
+
   it('leaves a piece\'s materialId untouched when it matches an existing material', () => {
     const raw = {
       settings: {},

@@ -57,5 +57,17 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
   }));
 
-  return { ...project, materials, pieces, offcutStock: project.offcutStock ?? [] };
+  // Same dangling-reference risk as pieces above, but an offcut can't be
+  // reassigned the same way: a piece is still something the user wants cut
+  // and can sensibly inherit the fallback material, while an offcut is
+  // scrap left over from a SPECIFIC board — cross-assigning it to
+  // materials[0] would offer it up as stock of a material it was never
+  // actually cut from. Dropping the orphaned entry instead avoids both the
+  // optimizer silently ignoring stock (OffcutStock.filter(o => o.materialId
+  // === material.id) never matches) that the OffcutStock panel still shows
+  // as available (it isn't filtered there), and misrepresenting its
+  // material.
+  const offcutStock = (project.offcutStock ?? []).filter(o => materialIds.has(o.materialId));
+
+  return { ...project, materials, pieces, offcutStock };
 }
