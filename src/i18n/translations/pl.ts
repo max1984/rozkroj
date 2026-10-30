@@ -157,6 +157,7 @@ export const pl: Translations = {
   duplicateSaveFailed: 'Nie udało się zapisać duplikatu — pamięć przeglądarki może być pełna lub niedostępna.',
   invalidProjectFile: 'Nieprawidłowy plik projektu.',
   couldNotReadFile: 'Nie udało się odczytać pliku.',
+  loadProjectFailed: 'Nie udało się wczytać tego projektu — zapis w pamięci przeglądarki może być uszkodzony.',
   csvUnmatchedMaterialWarning: (count) =>
     `${polishForm(
       count,

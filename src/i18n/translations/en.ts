@@ -139,6 +139,7 @@ export const en: Translations = {
   duplicateSaveFailed: 'Failed to save the duplicate — your browser storage may be full or unavailable.',
   invalidProjectFile: 'Invalid project file.',
   couldNotReadFile: 'Could not read the file.',
+  loadProjectFailed: 'Failed to load this project — its saved data in browser storage may be corrupted.',
   csvUnmatchedMaterialWarning: (count) =>
     `${count} piece${count !== 1 ? 's' : ''} had a Material that didn't match any existing material and ${count !== 1 ? 'were' : 'was'} assigned to the default instead.`,
   csvInvalidDimensionWarning: (count) =>

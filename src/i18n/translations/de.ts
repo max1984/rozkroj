@@ -139,6 +139,7 @@ export const de: Translations = {
   duplicateSaveFailed: 'Speichern des Duplikats fehlgeschlagen — der Browserspeicher ist möglicherweise voll oder nicht verfügbar.',
   invalidProjectFile: 'Ungültige Projektdatei.',
   couldNotReadFile: 'Datei konnte nicht gelesen werden.',
+  loadProjectFailed: 'Dieses Projekt konnte nicht geladen werden — die gespeicherten Daten im Browserspeicher sind möglicherweise beschädigt.',
   csvUnmatchedMaterialWarning: (count) =>
     `${count} Teil${count !== 1 ? 'e' : ''} hatte${count !== 1 ? 'n' : ''} ein Material, das zu keinem vorhandenen Material passte, und wurde${count !== 1 ? 'n' : ''} stattdessen dem Standard zugewiesen.`,
   csvInvalidDimensionWarning: (count) =>

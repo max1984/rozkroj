@@ -487,6 +487,27 @@ describe('store: project lifecycle', () => {
     expect(useStore.getState().projectName).toBe('My Cabinets');
   });
 
+  it(
+    'loadProjectById alerts instead of silently doing nothing when the stored project is corrupt',
+    async () => {
+      // loadProjectFromLibrary() returns null both for a missing entry and a
+      // corrupt one — ProjectLibrary.tsx's click handler just does `if
+      // (!loadProjectById(id)) return`, so without an alert here, clicking a
+      // broken library entry looked identical to clicking nothing at all.
+      const useStore = await freshStore();
+      useStore.getState().saveProject();
+      const id = useStore.getState().projectId;
+      localStorage.setItem(`rozkroj_library_project_${id}`, '{not valid json');
+      const alertSpy = vi.fn();
+      vi.stubGlobal('alert', alertSpy);
+
+      const result = useStore.getState().loadProjectById(id);
+
+      expect(result).toBe(false);
+      expect(alertSpy).toHaveBeenCalled();
+    }
+  );
+
   it('alerts and keeps hasUnsavedChanges true when the save fails (e.g. storage quota)', async () => {
     const useStore = await freshStore();
     const materialId = useStore.getState().materials[0].id;

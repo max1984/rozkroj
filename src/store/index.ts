@@ -377,7 +377,18 @@ export const useStore = create<AppState>()(
       loadProjectById: (id) => {
         if (!confirmDiscardUnsaved(get)) return false;
         const project = loadProjectFromLibrary(id);
-        if (!project) return false;
+        if (!project) {
+          // loadProjectFromLibrary() returns null both when the entry is
+          // missing and when its stored JSON is corrupt — either way,
+          // ProjectLibrary.tsx's click handler just does nothing with this
+          // false, leaving the dialog open and the entry still listed as if
+          // nothing had happened. Unlike a cancelled unsaved-changes confirm
+          // above (silence is correct there — the user chose that), a
+          // genuinely broken library entry needs to tell the user, same as
+          // every other storage-read/write failure in this app already does.
+          alert((TRANSLATIONS[get().language] ?? TRANSLATIONS.en).loadProjectFailed);
+          return false;
+        }
         setActiveProjectId(id);
         get().loadProject(project);
         return true;

@@ -141,6 +141,7 @@ export interface Translations {
   duplicateSaveFailed: string;
   invalidProjectFile: string;
   couldNotReadFile: string;
+  loadProjectFailed: string;
   csvUnmatchedMaterialWarning: (count: number) => string;
   csvInvalidDimensionWarning: (count: number) => string;
   csvInvalidGrainWarning: (count: number) => string;
