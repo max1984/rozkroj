@@ -95,8 +95,33 @@ describe('generatePdf — edge banding total', () => {
       // Fully banded 100x100 piece: 400mm/instance. 2 requested but only 1
       // placed — the printed total must reflect 400mm, not 800mm.
       const summaryLine = textCalls.find(s => s.includes('Edge banding:'));
-      expect(summaryLine).toContain('400mm');
-      expect(summaryLine).not.toContain('800mm');
+      expect(summaryLine).toContain('400 mm');
+      expect(summaryLine).not.toContain('800 mm');
+    }
+  );
+});
+
+describe('generatePdf — inch unit formatting', () => {
+  afterEach(() => {
+    textCalls = [];
+  });
+
+  it(
+    'regression: printed inch values as plain 2-decimal numbers (e.g. "3.50\\"") instead of the ' +
+      "fractional-inch format the on-screen piece list/summary already use (useUnitDisplay's " +
+      '`format` -> formatDisplay -> toFractionalInch, nearest 1/32") — a shop using inches saw ' +
+      'fractions everywhere on screen but decimals in the one document actually meant to be read ' +
+      'with a tape measure at the saw',
+    async () => {
+      await generatePdf(
+        emptyLayout(),
+        project({ unit: 'inch', settings: { sawKerf: 88.9, freshEdge: false, freshEdgeTrim: 0 } }),
+        false,
+        'New Project'
+      );
+      const kerfLine = textCalls.find(s => s.startsWith('Kerf:'));
+      expect(kerfLine).toContain('3 1/2"');
+      expect(kerfLine).not.toContain('3.50"');
     }
   );
 });

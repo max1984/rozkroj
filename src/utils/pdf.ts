@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { LayoutResult, Project, PieceDefinition } from '../types';
-import { fromMm } from './units';
+import { formatDisplay } from './units';
 import { totalBandingLengthMm, mapEdgeBandingForRotation } from './edgeBanding';
 
 export function edgesLabel(p: PieceDefinition): string {
@@ -29,8 +29,12 @@ export async function generatePdf(
   const materialMap = new Map(project.materials.map(m => [m.id, m]));
   const unit = project.unit;
 
-  const formatVal = (mm: number) =>
-    unit === 'inch' ? `${(fromMm(mm, 'inch')).toFixed(2)}"` : `${mm}mm`;
+  // Same conversion the on-screen piece list/summary use (useUnitDisplay's
+  // `format`) — this used to roll its own decimal-inch formatting instead
+  // (e.g. "23.50\""), so a shop using inches saw fractional measurements
+  // ("23 1/2\"") everywhere on screen but decimals in the one document
+  // actually meant to be read with a tape measure at the saw.
+  const formatVal = (mm: number) => formatDisplay(mm, unit);
   const formatCost = (v: number) => v.toFixed(2);
 
   // --- Cut list table first page ---
