@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { migrateProject } from './migrateProject';
 import { DEFAULT_EDGE_BANDING } from '../constants/defaults';
-import { STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
+import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
 import { TRANSLATIONS } from '../i18n';
 
 // defaultMaterial() falls back to the OS locale via navigator.language when
@@ -137,6 +137,32 @@ describe('migrateProject', () => {
 
     expect(result.materials[0].size).toBe(standard);
   });
+
+  it(
+    'falls back a material whose size width/height is non-finite, negative or zero to the ' +
+      'default sheet size, matching the manual add-material/custom-size form (which only ever ' +
+      'commits a width/height onBlur when it is > 0) — otherwise optimizer.ts\'s free-rect math ' +
+      'goes NaN/negative for every piece on that material, silently sending them all to Unplaced',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [
+          currentMaterial({ id: 'nan-width', size: { label: 'Custom', width: NaN, height: 500, custom: true } }),
+          currentMaterial({ id: 'negative-height', size: { label: 'Custom', width: 1000, height: -50, custom: true } }),
+          currentMaterial({ id: 'zero-width', size: { label: 'Custom', width: 0, height: 500, custom: true } }),
+        ],
+        pieces: [],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.materials.map(m => m.size)).toEqual([
+        DEFAULT_SHEET_SIZE,
+        DEFAULT_SHEET_SIZE,
+        DEFAULT_SHEET_SIZE,
+      ]);
+    }
+  );
 
   it('leaves a custom material size untouched even if dimensions match a standard size', () => {
     const standard = STANDARD_SHEET_SIZES[0];

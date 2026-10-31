@@ -92,11 +92,29 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   }
 
   // Re-link standard sheet sizes so edits to STANDARD_SHEET_SIZES propagate.
+  // Same JSON.parse-skips-the-guards class as the piece-level fields below, but for a
+  // material's sheet size: MaterialManager.tsx's custom-size inputs only ever commit a
+  // width/height onBlur when `w > 0`/`h > 0` (and the standard-size <select> only ever
+  // offers the fixed, valid entries in STANDARD_SHEET_SIZES), so a non-finite, negative or
+  // zero size.width/height can only ever reach this point via a hand-edited or corrupted
+  // project file. Left unvalidated, it flows straight into optimizer.ts's
+  // initFreeRects()/usableArea(), making every free rect on that material's sheets NaN- or
+  // negative-sized — not a crash (NaN/negative comparisons just make every piece assigned to
+  // that material fail to place, exactly like an oversized piece does), but every one of
+  // those pieces would silently end up in "Unplaced" with nothing pointing at the real cause,
+  // and MaterialManager's own header line (`{format(size.width)} × {format(size.height)}`)
+  // would literally render "NaN mm × NaN mm". Falls back to DEFAULT_SHEET_SIZE rather than
+  // dropping the material — unlike an invalid piece dimension, a material can't be silently
+  // dropped without also orphaning every piece/offcut that references it.
   const materials = project.materials.map(m => {
     const matchedSize = STANDARD_SHEET_SIZES.find(
-      s => s.width === m.size.width && s.height === m.size.height && !m.size.custom
+      s => s.width === m.size?.width && s.height === m.size?.height && !m.size?.custom
     );
-    return matchedSize ? { ...m, size: matchedSize } : m;
+    if (matchedSize) return { ...m, size: matchedSize };
+    const hasValidSize =
+      Number.isFinite(m.size?.width) && (m.size?.width ?? 0) > 0 &&
+      Number.isFinite(m.size?.height) && (m.size?.height ?? 0) > 0;
+    return hasValidSize ? m : { ...m, size: DEFAULT_SHEET_SIZE };
   });
 
   // A piece referencing a material that no longer exists (corrupted or hand-edited
