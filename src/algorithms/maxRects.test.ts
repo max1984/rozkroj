@@ -96,4 +96,21 @@ describe('placePiece', () => {
     const result = placePiece(freeRects, 1000, 1000, 10, 10);
     expect(result).toEqual([{ x: 0, y: 0, width: 200, height: 200 }]);
   });
+
+  it(
+    'keeps one copy of a free rect instead of pruning it away entirely when two separate ' +
+      'splits produce an identical leftover — isContained(a,b) is true in BOTH directions for ' +
+      'two equal rects, so the naive "drop a if some OTHER rect contains it" filter dropped ' +
+      'EVERY copy (each one seeing the other as its container), silently losing that free area ' +
+      'from the sheet even though nothing actually overlapped it',
+    () => {
+      const freeRects: FreeRect[] = [
+        { x: 500, y: 500, width: 100, height: 100 },
+        { x: 500, y: 500, width: 100, height: 100 },
+      ];
+      // Placed far away — neither duplicate is touched by the split step, only pruning acts.
+      const result = placePiece(freeRects, 0, 0, 10, 10);
+      expect(result).toEqual([{ x: 500, y: 500, width: 100, height: 100 }]);
+    }
+  );
 });

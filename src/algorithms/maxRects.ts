@@ -42,9 +42,19 @@ function isContained(a: FreeRect, b: FreeRect): boolean {
     b.y + b.height >= a.y + a.height;
 }
 
+// Splitting the same overlap region from two different parent free rects can
+// legitimately produce two EQUAL leftover rects (a well-known MaxRects
+// characteristic, not a bug in splitFreeRect itself) — isContained(a, b) is
+// true in BOTH directions for a pair of equal rects, so filtering "drop a if
+// some OTHER rect contains it" dropped every copy, each one seeing the other
+// as its container, and silently lost that free area from the sheet even
+// though nothing actually overlapped it. When a and b mutually contain each
+// other (i.e. are equal), only the later one (by index) is dropped, keeping
+// exactly one copy; a rect strictly contained in a bigger one is still always
+// dropped regardless of index.
 function pruneFreeRects(freeRects: FreeRect[]): FreeRect[] {
   return freeRects.filter((a, i) =>
-    !freeRects.some((b, j) => i !== j && isContained(a, b))
+    !freeRects.some((b, j) => i !== j && isContained(a, b) && (!isContained(b, a) || i > j))
   );
 }
 
