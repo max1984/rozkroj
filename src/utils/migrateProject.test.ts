@@ -340,4 +340,47 @@ describe('migrateProject', () => {
     expect(result.pieces[0].rotationAllowed).toBe(false);
     expect(result.pieces[0].priority).toBe(true);
   });
+
+  it(
+    'coerces stringly-typed edgeBanding flags from an imported project file to real booleans, ' +
+      'matching the manual form and CSV importer — otherwise edgeBanding.ts\'s truthy checks ' +
+      '(totalBandingLengthMm, used by SummaryPanel and the cut-list PDF) treat the literal ' +
+      'string "false" as true, the opposite of what the file says',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [
+          legacyPiece({
+            edgeBanding: {
+              top: 'false',
+              right: 'true',
+              bottom: false,
+              left: true,
+            } as unknown as PieceDefinition['edgeBanding'],
+          }),
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces[0].edgeBanding).toEqual({ top: false, right: true, bottom: false, left: true });
+    }
+  );
+
+  it('falls back a non-boolean, non-"true"/"false" edgeBanding flag to false, and fills in flags missing from a partial object', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [
+        legacyPiece({
+          edgeBanding: { top: 1, right: true } as unknown as PieceDefinition['edgeBanding'],
+        }),
+      ],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].edgeBanding).toEqual({ top: false, right: true, bottom: false, left: false });
+  });
 });

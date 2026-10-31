@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_EDGE_BANDING, MAX_PIECE_QUANTITY } from '../constants/defaults';
+import { MAX_PIECE_QUANTITY } from '../constants/defaults';
 import { getPieceColor } from './colors';
 import { getInitialLanguage } from './languagePreference';
 import { TRANSLATIONS } from '../i18n';
@@ -29,6 +29,33 @@ function coerceBoolean(value: unknown, defaultValue: boolean): boolean {
     if (lower === 'false') return false;
   }
   return defaultValue;
+}
+
+/**
+ * Same stringly-typed-boolean gap as coerceBoolean above, but for
+ * edgeBanding's four per-edge flags. The manual form (EdgeBandingPicker's
+ * `onChange: (value: EdgeBanding) => void`, toggled via `!value[key]`) and
+ * the CSV importer (edgesFromString's `set.has(...)`, a Set membership test)
+ * both guarantee every one of top/right/bottom/left is a real boolean — but
+ * `p.edgeBanding ?? DEFAULT_EDGE_BANDING` only ever replaced the WHOLE
+ * object when missing entirely, never validating the individual flags on an
+ * object that IS present. A hand-edited project file with
+ * `"top": "false"` would have that key stay the literal string "false" —
+ * truthy in JS, so edgeBanding.ts's `p.edgeBanding.top ? p.width : 0`
+ * (totalBandingLengthMm, used by both SummaryPanel and the cut-list PDF)
+ * silently counted banding tape for an edge the file says has none, and
+ * edgeCount()'s `Number(banding.top)` (PieceRow's ▭ indicator) produces NaN
+ * for any non-boolean value, which propagates through the `+` sum and makes
+ * `edgeCount(...) > 0` false even when other edges genuinely have banding.
+ */
+function coerceEdgeBanding(value: unknown): PieceDefinition['edgeBanding'] {
+  const v = (value ?? {}) as Partial<PieceDefinition['edgeBanding']>;
+  return {
+    top: coerceBoolean(v.top, false),
+    right: coerceBoolean(v.right, false),
+    bottom: coerceBoolean(v.bottom, false),
+    left: coerceBoolean(v.left, false),
+  };
 }
 
 interface LegacyProject {
@@ -92,7 +119,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     .map(p => ({
       ...p,
       materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
-      edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
+      edgeBanding: coerceEdgeBanding(p.edgeBanding),
       // Same class of gap as quantity/width/height above: csv.ts's importer
       // already rejects a Grain cell outside the 'none'|'horizontal'|
       // 'vertical' union (falling back to 'none'), because the TS cast it
