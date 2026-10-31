@@ -284,4 +284,60 @@ describe('migrateProject', () => {
 
     expect(result.pieces[0].grain).toBe('horizontal');
   });
+
+  it(
+    'coerces a stringly-typed rotationAllowed/priority from an imported project file to a real boolean, ' +
+      'matching the manual form (checkbox) and CSV importer — otherwise optimizer.ts\'s truthy checks ' +
+      'treat the literal string "false" as true, the opposite of what the file says',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [
+          legacyPiece({
+            id: 'p1',
+            rotationAllowed: 'false' as unknown as boolean,
+            priority: 'true' as unknown as boolean,
+          }),
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces[0].rotationAllowed).toBe(false);
+      expect(result.pieces[0].priority).toBe(true);
+    }
+  );
+
+  it('falls back a non-boolean, non-"true"/"false" rotationAllowed/priority to their usual defaults', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [
+        legacyPiece({
+          id: 'p1',
+          rotationAllowed: null as unknown as boolean,
+          priority: 1 as unknown as boolean,
+        }),
+      ],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].rotationAllowed).toBe(true);
+    expect(result.pieces[0].priority).toBe(false);
+  });
+
+  it('leaves already-boolean rotationAllowed/priority values untouched', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ rotationAllowed: false, priority: true })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].rotationAllowed).toBe(false);
+    expect(result.pieces[0].priority).toBe(true);
+  });
 });

@@ -8,6 +8,29 @@ import { TRANSLATIONS } from '../i18n';
 
 const VALID_GRAINS = new Set<PieceDefinition['grain']>(['none', 'horizontal', 'vertical']);
 
+/**
+ * Both the manual add-piece form (checkbox inputs) and the CSV importer
+ * (`row['RotationAllowed']?.toLowerCase() !== 'false'` / `row['Priority']?.toLowerCase() === 'true'`)
+ * guarantee rotationAllowed/priority are always real booleans by the time a
+ * piece reaches the store — but a project file loaded via "Import project
+ * file" skips both of those and goes straight from JSON.parse into the
+ * store with no such guard. A hand-edited or foreign-tool-exported file can
+ * carry the STRING "false" instead of the boolean `false` for either field.
+ * JS treats any non-empty string as truthy, so optimizer.ts's
+ * `p.rotationAllowed && p.grain === 'none'` and its `a.priority !== b.priority`
+ * sort comparator would both silently treat that string "false" as true —
+ * the exact opposite of what the file says — with no error or warning.
+ */
+function coerceBoolean(value: unknown, defaultValue: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const lower = value.toLowerCase();
+    if (lower === 'true') return true;
+    if (lower === 'false') return false;
+  }
+  return defaultValue;
+}
+
 interface LegacyProject {
   settings?: { size?: { label: string; width: number; height: number; custom?: boolean } };
   materials?: MaterialStock[];
@@ -94,6 +117,13 @@ export function migrateProject(raw: LegacyProject & Project): Project {
       quantity: Number.isFinite(p.quantity) && p.quantity > 0
         ? Math.min(Math.round(p.quantity), MAX_PIECE_QUANTITY)
         : 1,
+      // Same JSON.parse-skips-the-guards class as grain/quantity above, but
+      // for these two booleans — see coerceBoolean's comment. Defaults match
+      // PieceForm's own `useState(editing?.rotationAllowed ?? true)` /
+      // `useState(editing?.priority ?? false)` for a field that's missing
+      // entirely, not just malformed.
+      rotationAllowed: coerceBoolean(p.rotationAllowed, true),
+      priority: coerceBoolean(p.priority, false),
     }));
 
   // Same dangling-reference risk as pieces above, but an offcut can't be
