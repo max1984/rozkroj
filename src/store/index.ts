@@ -467,7 +467,21 @@ migrateLegacySingleProject();
 const activeId = getActiveProjectId();
 if (activeId) {
   const project = loadProjectFromLibrary(activeId);
-  if (project) useStore.getState().loadProject(project);
+  if (project) {
+    useStore.getState().loadProject(project);
+  } else {
+    // Same failure loadProjectById() already alerts on — a missing or
+    // corrupt library entry (see its own comment) — but reachable here too:
+    // the active pointer can go stale from another tab deleting the project,
+    // or from corruption that hit only this one entry's own key while
+    // ACTIVE_ID_KEY/the index stayed intact. Left unhandled, it would silently
+    // fall back to a blank project with no indication anything was wrong, AND
+    // the dangling pointer would keep repeating the same silent fallback on
+    // every future reload — clear it so a subsequent save starts clean.
+    clearActiveProjectId();
+    const language = useStore.getState().language;
+    alert((TRANSLATIONS[language] ?? TRANSLATIONS.en).loadProjectFailed);
+  }
 }
 
 // Any genuine edit to tracked project data (pieces, materials, settings,

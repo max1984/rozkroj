@@ -526,6 +526,31 @@ describe('store: project lifecycle', () => {
     }
   );
 
+  it(
+    'resuming the active project on startup alerts and clears the stale pointer when the stored project is missing or corrupt',
+    async () => {
+      // Same gap loadProjectById() already closed for the exact same failure
+      // (see the test above) — but the module-init resume path on reload
+      // used to hit it unhandled: silently falling back to a blank project
+      // with no indication anything was wrong, and leaving the pointer
+      // dangling so every future reload repeated the same silent fallback.
+      vi.resetModules();
+      const storage = new MemoryStorage();
+      storage.setItem('rozkroj_active_project_id', 'nonexistent-id');
+      vi.stubGlobal('localStorage', storage);
+      vi.stubGlobal('navigator', { language: 'en-US' });
+      vi.stubGlobal('confirm', () => true);
+      const alertSpy = vi.fn();
+      vi.stubGlobal('alert', alertSpy);
+
+      const mod = await import('./index');
+
+      expect(alertSpy).toHaveBeenCalled();
+      expect(storage.getItem('rozkroj_active_project_id')).toBeNull();
+      expect(mod.useStore.getState().projectId).not.toBe('nonexistent-id');
+    }
+  );
+
   it('alerts and keeps hasUnsavedChanges true when the save fails (e.g. storage quota)', async () => {
     const useStore = await freshStore();
     const materialId = useStore.getState().materials[0].id;
