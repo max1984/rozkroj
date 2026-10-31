@@ -46,4 +46,10 @@ describe('AlgorithmPicker', () => {
     expect(optimalBtn.getAttribute('aria-pressed')).toBe('true');
     expect(easyCutBtn.getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('exposes the two buttons as a single labelled group for assistive tech', () => {
+    render(<AlgorithmPicker />);
+    const group = screen.getByRole('group', { name: 'Cut Mode' });
+    expect(group.querySelectorAll('button')).toHaveLength(2);
+  });
 });

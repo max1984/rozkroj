@@ -13,8 +13,16 @@ export function AlgorithmPicker() {
 
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-ink">{t.cutModeLabel}</label>
-      <div className="flex gap-2">
+      <label id="algorithm-picker-label" className="block text-sm font-medium text-ink">{t.cutModeLabel}</label>
+      {/* UnitToggle/LanguageSwitcher (the other two multi-button toggles in
+          this codebase) each got role="group" with their own aria-label —
+          this one already has a visible label right above it, so it's
+          wired to that one via aria-labelledby instead of adding a second,
+          redundant translation key. Without it, a screen reader landed on
+          two individually-announced buttons with no indication they're a
+          single "Tryb rozkroju" choice, same gap as the other two before
+          their own fix. */}
+      <div role="group" aria-labelledby="algorithm-picker-label" className="flex gap-2">
         {options.map(opt => (
           <button
             key={opt.value}
