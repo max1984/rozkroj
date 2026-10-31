@@ -62,6 +62,17 @@ describe('SummaryPanel', () => {
     expect(screen.getByText('1 +1 offcut')).toBeTruthy();
   });
 
+  it('pluralizes the offcut suffix when more than one offcut sheet was used', () => {
+    layout = baseLayout({
+      sheets: [
+        sheet({ sheetIndex: 0, sourceOffcutId: 'o1' }),
+        sheet({ sheetIndex: 1, sourceOffcutId: 'o2' }),
+      ],
+    });
+    render(<SummaryPanel />);
+    expect(screen.getByText('0 +2 offcuts')).toBeTruthy();
+  });
+
   it('hides the material cost stat when totalCost is 0', () => {
     layout = baseLayout({ totalCost: 0 });
     render(<SummaryPanel />);

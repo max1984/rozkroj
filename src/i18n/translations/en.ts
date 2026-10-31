@@ -123,7 +123,7 @@ export const en: Translations = {
 
   // SummaryPanel
   sheetsLabel: 'Sheets',
-  offcutSuffix: (count) => ` +${count} offcut`,
+  offcutSuffix: (count) => ` +${count} offcut${count !== 1 ? 's' : ''}`,
   totalWasteLabel: 'Total waste',
   materialCostLabel: 'Material cost',
   unplacedLabel: 'Unplaced',
