@@ -6,6 +6,8 @@ import { getPieceColor } from './colors';
 import { getInitialLanguage } from './languagePreference';
 import { TRANSLATIONS } from '../i18n';
 
+const VALID_GRAINS = new Set<PieceDefinition['grain']>(['none', 'horizontal', 'vertical']);
+
 interface LegacyProject {
   settings?: { size?: { label: string; width: number; height: number; custom?: boolean } };
   materials?: MaterialStock[];
@@ -68,6 +70,18 @@ export function migrateProject(raw: LegacyProject & Project): Project {
       ...p,
       materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
       edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
+      // Same class of gap as quantity/width/height above: csv.ts's importer
+      // already rejects a Grain cell outside the 'none'|'horizontal'|
+      // 'vertical' union (falling back to 'none'), because the TS cast it
+      // used to do (`row['Grain'] as PieceDefinition['grain']`) only checks
+      // at compile time — but a project file loaded via "Import project
+      // file" skips that importer entirely and goes straight from
+      // JSON.parse into the store with no such guard. An unrecognized value
+      // doesn't crash anything (optimizer.ts's `grain === 'none'` treats any
+      // non-'none' string the same way, safely forcing rotationAllowed:
+      // false), but PieceForm.tsx's <select> has no matching <option> for
+      // it, so editing that piece silently shows the dropdown as blank.
+      grain: VALID_GRAINS.has(p.grain) ? p.grain : 'none',
       // Both the manual add-piece form and the CSV importer clamp quantity to
       // MAX_PIECE_QUANTITY (see its own comment: optimizer.ts's expandPieces()
       // loops `quantity` times per piece, so an unbounded value freezes the

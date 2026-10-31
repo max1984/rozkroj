@@ -256,4 +256,32 @@ describe('migrateProject', () => {
       expect(result.pieces.map(p => p.id)).toEqual(['ok']);
     }
   );
+
+  it(
+    'falls back an imported piece\'s unrecognized Grain value to \'none\', matching the CSV importer — ' +
+      'otherwise PieceForm\'s <select> has no matching <option> and silently renders blank',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [legacyPiece({ grain: 'diagonal' as unknown as PieceDefinition['grain'] })],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces[0].grain).toBe('none');
+    }
+  );
+
+  it('leaves a piece\'s valid Grain value untouched', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ grain: 'horizontal' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].grain).toBe('horizontal');
+  });
 });
