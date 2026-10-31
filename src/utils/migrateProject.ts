@@ -51,23 +51,36 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // save, or materials trimmed independently) would otherwise be silently dropped
   // from every sheet by the optimizer, with no unplaced-piece warning to explain why.
   const materialIds = new Set(materials.map(m => m.id));
-  const pieces = (project.pieces ?? []).map(p => ({
-    ...p,
-    materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
-    edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
-    // Both the manual add-piece form and the CSV importer clamp quantity to
-    // MAX_PIECE_QUANTITY (see its own comment: optimizer.ts's expandPieces()
-    // loops `quantity` times per piece, so an unbounded value freezes the
-    // tab) — but a project file loaded via "Import project file" (hand-
-    // edited, corrupted, or shared by someone else) skipped both of those
-    // and went straight from JSON.parse into the store with no such guard,
-    // same dangling-reference risk this function already migrates for
-    // materialId/edgeBanding above, just for the numeric field those two
-    // other entry points already protect.
-    quantity: Number.isFinite(p.quantity) && p.quantity > 0
-      ? Math.min(Math.round(p.quantity), MAX_PIECE_QUANTITY)
-      : 1,
-  }));
+  // Both the manual add-piece form (PieceForm's handleSubmit) and the CSV
+  // importer reject a piece whose width/height isn't a finite positive
+  // number before it ever reaches the store — but a project file loaded via
+  // "Import project file" (hand-edited, corrupted, or shared by someone
+  // else) skips both of those and goes straight from JSON.parse into the
+  // store with no such guard. Unlike quantity (which has a sane fallback of
+  // 1), there's no sensible width/height to default to — a piece with a
+  // NaN/negative/zero dimension has no actual size to cut, so it's dropped
+  // instead of kept around with a 1×1mm sliver the optimizer would place
+  // somewhere, or a negative size rendered incorrectly in the cut list and
+  // on the sheet canvas.
+  const pieces = (project.pieces ?? [])
+    .filter(p => Number.isFinite(p.width) && p.width > 0 && Number.isFinite(p.height) && p.height > 0)
+    .map(p => ({
+      ...p,
+      materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
+      edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
+      // Both the manual add-piece form and the CSV importer clamp quantity to
+      // MAX_PIECE_QUANTITY (see its own comment: optimizer.ts's expandPieces()
+      // loops `quantity` times per piece, so an unbounded value freezes the
+      // tab) — but a project file loaded via "Import project file" (hand-
+      // edited, corrupted, or shared by someone else) skipped both of those
+      // and went straight from JSON.parse into the store with no such guard,
+      // same dangling-reference risk this function already migrates for
+      // materialId/edgeBanding above, just for the numeric field those two
+      // other entry points already protect.
+      quantity: Number.isFinite(p.quantity) && p.quantity > 0
+        ? Math.min(Math.round(p.quantity), MAX_PIECE_QUANTITY)
+        : 1,
+    }));
 
   // Same dangling-reference risk as pieces above, but an offcut can't be
   // reassigned the same way: a piece is still something the user wants cut

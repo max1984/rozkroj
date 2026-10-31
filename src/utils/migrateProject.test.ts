@@ -235,4 +235,25 @@ describe('migrateProject', () => {
 
     expect(result.pieces.map(p => p.quantity)).toEqual([1, 1, 1]);
   });
+
+  it(
+    'drops an imported piece whose width or height is non-finite, negative or zero, matching the manual ' +
+      'form and CSV importer — unlike quantity there is no sane dimension to fall back to',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [
+          legacyPiece({ id: 'ok', width: 600, height: 400 }),
+          legacyPiece({ id: 'nan-width', width: NaN, height: 400 }),
+          legacyPiece({ id: 'negative-height', width: 600, height: -100 }),
+          legacyPiece({ id: 'zero-width', width: 0, height: 400 }),
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces.map(p => p.id)).toEqual(['ok']);
+    }
+  );
 });
