@@ -202,4 +202,37 @@ describe('migrateProject', () => {
 
     expect(result.pieces[0].materialId).toBe('m2');
   });
+
+  it(
+    'clamps an excessive piece quantity from an imported project file, matching the manual ' +
+      'form and CSV importer — otherwise optimizer.ts\'s expandPieces() loops that many times ' +
+      'and freezes the tab',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [legacyPiece({ quantity: 999999999 })],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces[0].quantity).toBe(1000);
+    }
+  );
+
+  it('falls back a non-finite or non-positive imported quantity to 1, same as a missing CSV cell', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [
+        legacyPiece({ id: 'p1', quantity: NaN }),
+        legacyPiece({ id: 'p2', quantity: -5 }),
+        legacyPiece({ id: 'p3', quantity: 0 }),
+      ],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces.map(p => p.quantity)).toEqual([1, 1, 1]);
+  });
 });

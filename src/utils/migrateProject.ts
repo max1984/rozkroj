@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_EDGE_BANDING } from '../constants/defaults';
+import { DEFAULT_EDGE_BANDING, MAX_PIECE_QUANTITY } from '../constants/defaults';
 import { getPieceColor } from './colors';
 import { getInitialLanguage } from './languagePreference';
 import { TRANSLATIONS } from '../i18n';
@@ -55,6 +55,18 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     ...p,
     materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
     edgeBanding: p.edgeBanding ?? DEFAULT_EDGE_BANDING,
+    // Both the manual add-piece form and the CSV importer clamp quantity to
+    // MAX_PIECE_QUANTITY (see its own comment: optimizer.ts's expandPieces()
+    // loops `quantity` times per piece, so an unbounded value freezes the
+    // tab) — but a project file loaded via "Import project file" (hand-
+    // edited, corrupted, or shared by someone else) skipped both of those
+    // and went straight from JSON.parse into the store with no such guard,
+    // same dangling-reference risk this function already migrates for
+    // materialId/edgeBanding above, just for the numeric field those two
+    // other entry points already protect.
+    quantity: Number.isFinite(p.quantity) && p.quantity > 0
+      ? Math.min(Math.round(p.quantity), MAX_PIECE_QUANTITY)
+      : 1,
   }));
 
   // Same dangling-reference risk as pieces above, but an offcut can't be
