@@ -38,6 +38,7 @@ export const de: Translations = {
 
   // Sidebar
   settingsHeading: 'Einstellungen',
+  unitSwitcherTitle: 'Einheit',
 
   // MaterialManager
   materialsHeading: 'Materialien',

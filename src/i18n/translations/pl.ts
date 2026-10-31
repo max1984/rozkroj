@@ -48,6 +48,7 @@ export const pl: Translations = {
 
   // Sidebar
   settingsHeading: 'Ustawienia',
+  unitSwitcherTitle: 'Jednostka',
 
   // MaterialManager
   materialsHeading: 'Materiały',

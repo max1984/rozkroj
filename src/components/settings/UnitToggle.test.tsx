@@ -36,4 +36,9 @@ describe('UnitToggle', () => {
     expect(screen.getByText('mm').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByText('inch').getAttribute('aria-pressed')).toBe('false');
   });
+
+  it('labels the button group for assistive tech, not just the two unlabeled unit buttons', () => {
+    render(<UnitToggle />);
+    expect(screen.getByRole('group', { name: 'Unit' })).toBeTruthy();
+  });
 });

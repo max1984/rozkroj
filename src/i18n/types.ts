@@ -39,6 +39,7 @@ export interface Translations {
 
   // Sidebar
   settingsHeading: string;
+  unitSwitcherTitle: string;
 
   // MaterialManager
   materialsHeading: string;

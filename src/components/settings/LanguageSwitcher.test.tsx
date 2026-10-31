@@ -39,4 +39,9 @@ describe('LanguageSwitcher', () => {
     expect(screen.getByText('PL').getAttribute('aria-pressed')).toBe('false');
     expect(screen.getByText('DE').getAttribute('aria-pressed')).toBe('true');
   });
+
+  it('labels the button group for assistive tech, not just the three individually-lettered buttons', () => {
+    render(<LanguageSwitcher />);
+    expect(screen.getByRole('group', { name: 'Language' })).toBeTruthy();
+  });
 });
