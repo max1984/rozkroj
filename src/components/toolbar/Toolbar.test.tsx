@@ -88,11 +88,61 @@ afterEach(() => {
 });
 
 describe('Toolbar', () => {
-  it('renders the project name and updates it via setProjectName', () => {
+  it('renders the project name and commits the edit via setProjectName on blur', () => {
     render(<Toolbar />);
     const nameInput = screen.getByDisplayValue('My Project');
     fireEvent.change(nameInput, { target: { value: 'Kitchen' } });
+    expect(H.setProjectName).not.toHaveBeenCalled();
+
+    fireEvent.blur(nameInput);
     expect(H.setProjectName).toHaveBeenCalledWith('Kitchen');
+  });
+
+  it(
+    'regression: does not call setProjectName once per keystroke — projectName is a zundo-tracked ' +
+      'undo field, so committing on every change flooded the 100-entry undo cap with one single-' +
+      'character entry per keystroke and made Undo revert a rename one letter at a time',
+    () => {
+      render(<Toolbar />);
+      const nameInput = screen.getByDisplayValue('My Project');
+
+      fireEvent.change(nameInput, { target: { value: 'K' } });
+      fireEvent.change(nameInput, { target: { value: 'Ki' } });
+      fireEvent.change(nameInput, { target: { value: 'Kit' } });
+      expect(H.setProjectName).not.toHaveBeenCalled();
+
+      fireEvent.blur(nameInput);
+      expect(H.setProjectName).toHaveBeenCalledTimes(1);
+      expect(H.setProjectName).toHaveBeenCalledWith('Kit');
+    }
+  );
+
+  it('does not call setProjectName on blur when the draft was not actually changed', () => {
+    render(<Toolbar />);
+    const nameInput = screen.getByDisplayValue('My Project');
+    fireEvent.blur(nameInput);
+    expect(H.setProjectName).not.toHaveBeenCalled();
+  });
+
+  it('commits the draft on Enter by blurring the field', () => {
+    render(<Toolbar />);
+    const nameInput = screen.getByDisplayValue('My Project') as HTMLInputElement;
+    nameInput.focus();
+    fireEvent.change(nameInput, { target: { value: 'Kitchen' } });
+    fireEvent.keyDown(nameInput, { key: 'Enter' });
+    expect(H.setProjectName).toHaveBeenCalledWith('Kitchen');
+  });
+
+  it('syncs the draft to a new projectName from the store (e.g. after loading a different project)', () => {
+    const { rerender } = render(<Toolbar />);
+    const nameInput = screen.getByDisplayValue('My Project') as HTMLInputElement;
+    fireEvent.change(nameInput, { target: { value: 'Unsaved draft' } });
+
+    H.mutable.projectName = 'Loaded Project';
+    rerender(<Toolbar />);
+
+    expect(screen.getByDisplayValue('Loaded Project')).toBeTruthy();
+    expect(screen.queryByDisplayValue('Unsaved draft')).toBeNull();
   });
 
   it('disables undo/redo with empty history and enables them with history present', () => {

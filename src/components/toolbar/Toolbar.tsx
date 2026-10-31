@@ -32,6 +32,20 @@ export function Toolbar() {
   const [showPdfOpts, setShowPdfOpts] = useState(false);
   const pdfPopoverRef = useRef<HTMLDivElement>(null);
 
+  // projectName is a zundo-tracked/undo field (store/index.ts) — wiring this
+  // input straight to setProjectName on every keystroke (as it used to) made
+  // typing a name push one single-character undo entry per keystroke,
+  // flooding the 100-entry cap and leaving Undo revert the rename one letter
+  // at a time instead of the user's actual last edit. Every other text/number
+  // field feeding this same tracked store (PieceForm's name, MaterialManager/
+  // KerfSettings's numbers) already edits a local draft and commits once —
+  // on submit or blur — instead of per keystroke; this just matches that.
+  const [nameDraft, setNameDraft] = useState(projectName);
+  useEffect(() => { setNameDraft(projectName); }, [projectName]);
+  const commitName = () => {
+    if (nameDraft !== projectName) setProjectName(nameDraft);
+  };
+
   // ProjectLibrary's dialog (Radix) already closes on outside click and
   // Escape for free — this hand-rolled popover had neither, so the ONLY way
   // to back out of it (without actually generating a PDF) was clicking the
@@ -90,8 +104,10 @@ export function Toolbar() {
         <CutMark />
         <input
           className="font-semibold text-ink bg-transparent border-none outline-none focus:ring-1 focus:ring-accent rounded-sm px-1 text-sm"
-          value={projectName}
-          onChange={e => setProjectName(e.target.value)}
+          value={nameDraft}
+          onChange={e => setNameDraft(e.target.value)}
+          onBlur={commitName}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
           title={t.renameProjectTitle}
           aria-label={t.projectNameLabel}
         />
