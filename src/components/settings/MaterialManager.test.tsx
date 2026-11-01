@@ -80,6 +80,17 @@ describe('MaterialManager', () => {
     expect(updateMaterial).not.toHaveBeenCalled();
   });
 
+  it(
+    'ignores an absurdly large custom width on blur, instead of committing a sheet size that would ' +
+      'make SheetCanvas/the PDF ruler try to render millions of grid lines (MAX_SHEET_DIMENSION_MM)',
+    () => {
+      materials = [material()];
+      render(<MaterialManager />);
+      fireEvent.blur(screen.getByPlaceholderText('Width (mm)'), { target: { value: '999999999' } });
+      expect(updateMaterial).not.toHaveBeenCalled();
+    }
+  );
+
   it('ignores an empty custom height on blur', () => {
     materials = [material()];
     render(<MaterialManager />);

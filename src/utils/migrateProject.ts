@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
 import type { CuttingSettings, MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, MAX_PIECE_QUANTITY } from '../constants/defaults';
+import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, MAX_PIECE_QUANTITY, MAX_SHEET_DIMENSION_MM } from '../constants/defaults';
 import { getPieceColor } from './colors';
 import { getInitialLanguage } from './languagePreference';
 import { TRANSLATIONS } from '../i18n';
@@ -142,9 +142,17 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     const matchedSize = STANDARD_SHEET_SIZES.find(
       s => s.width === m.size?.width && s.height === m.size?.height && !m.size?.custom
     );
+    // Same unbounded-dimension gap as MaterialManager.tsx's custom width/height
+    // onBlur (now also upper-bounded) — this is the OTHER entry point for a
+    // material size, and only ever checked `> 0`, never an upper bound. A
+    // hand-edited or corrupted project file with a sheet size in, say, the
+    // billions would otherwise flow straight into SheetCanvas's grid-line
+    // Array.from()/the PDF ruler's loop (both stepped no coarser than 200mm
+    // regardless of sheet size — see MAX_SHEET_DIMENSION_MM's own comment) and
+    // freeze the tab trying to render millions of lines.
     const hasValidSize =
-      Number.isFinite(m.size?.width) && (m.size?.width ?? 0) > 0 &&
-      Number.isFinite(m.size?.height) && (m.size?.height ?? 0) > 0;
+      Number.isFinite(m.size?.width) && (m.size?.width ?? 0) > 0 && (m.size?.width ?? 0) <= MAX_SHEET_DIMENSION_MM &&
+      Number.isFinite(m.size?.height) && (m.size?.height ?? 0) > 0 && (m.size?.height ?? 0) <= MAX_SHEET_DIMENSION_MM;
     const size = matchedSize ?? (hasValidSize ? m.size : DEFAULT_SHEET_SIZE);
     // Same JSON.parse-skips-the-guards class as size.width/height above, but for
     // pricePerSheet: MaterialManager.tsx's price input already guards against a

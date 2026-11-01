@@ -165,6 +165,26 @@ describe('migrateProject', () => {
   );
 
   it(
+    'falls back a material whose size width/height is absurdly large to the default sheet size — ' +
+      'SheetCanvas\'s grid lines and the PDF ruler both step no coarser than 200mm regardless of sheet ' +
+      'size (see MAX_SHEET_DIMENSION_MM), so an unbounded value from a hand-edited/corrupted project ' +
+      'file would otherwise try to render millions of lines and freeze the tab',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [
+          currentMaterial({ id: 'huge-width', size: { label: 'Custom', width: 999999999, height: 500, custom: true } }),
+        ],
+        pieces: [],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.materials[0].size).toBe(DEFAULT_SHEET_SIZE);
+    }
+  );
+
+  it(
     'falls back a material\'s non-finite, negative or missing pricePerSheet to 0, matching the ' +
       'price input (which already guards isNaN on blur) — otherwise optimizer.ts\'s ' +
       '`sheetCount * m.pricePerSheet` goes NaN and poisons the whole project\'s totalCost, not just this material',

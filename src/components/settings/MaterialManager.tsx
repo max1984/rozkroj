@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useStore } from '../../store';
 import { useUnitDisplay } from '../../hooks/useUnitDisplay';
 import { STANDARD_SHEET_SIZES, DEFAULT_SHEET_SIZE } from '../../constants/sheetSizes';
+import { MAX_SHEET_DIMENSION_MM } from '../../constants/defaults';
 import { toMm } from '../../utils/units';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { MaterialStock } from '../../types';
@@ -204,7 +205,10 @@ function MaterialRow({
                   // unedited field in the first place.
                   if (parseFloat(e.target.value) === parseFloat(inputValue(material.size.width))) return;
                   const w = toMm(parseFloat(e.target.value), unit);
-                  if (w > 0) onUpdate({ size: { ...material.size, width: w } });
+                  // Upper-bounded the same way MAX_PIECE_QUANTITY bounds quantity — see its
+                  // comment in constants/defaults.ts: an unbounded sheet size freezes the tab
+                  // rendering SheetCanvas's grid lines / the PDF ruler.
+                  if (w > 0 && w <= MAX_SHEET_DIMENSION_MM) onUpdate({ size: { ...material.size, width: w } });
                 }}
               />
               <span className="text-muted">×</span>
@@ -216,10 +220,10 @@ function MaterialRow({
                 aria-label={t.heightWithUnit(unit)}
                 defaultValue={inputValue(material.size.height)}
                 onBlur={e => {
-                  // Same reasoning as the width guard above.
+                  // Same reasoning as the width guard above, including the upper bound.
                   if (parseFloat(e.target.value) === parseFloat(inputValue(material.size.height))) return;
                   const h = toMm(parseFloat(e.target.value), unit);
-                  if (h > 0) onUpdate({ size: { ...material.size, height: h } });
+                  if (h > 0 && h <= MAX_SHEET_DIMENSION_MM) onUpdate({ size: { ...material.size, height: h } });
                 }}
               />
             </div>
