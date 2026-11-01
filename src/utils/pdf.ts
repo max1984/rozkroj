@@ -169,8 +169,17 @@ export async function generatePdf(
   if (allOnOnePage) {
     const cols = Math.ceil(Math.sqrt(layout.sheets.length));
     const rows = Math.ceil(layout.sheets.length / cols);
-    const cellW = (pageW - margin * 2) / cols - 5;
-    const cellH = (pageH - margin * 2 - 20) / rows - 8;
+    // With enough sheets (MAX_PIECE_QUANTITY is 1000 per piece, so a few
+    // piece types easily produce hundreds of sheets), cols/rows grow large
+    // enough that subtracting the fixed inter-cell gutter (5mm/8mm) leaves a
+    // ZERO or NEGATIVE cell size (e.g. 484 sheets -> 22x22 grid -> cellH =
+    // 170/22 - 8 ≈ -0.27mm). drawSheet() then computes a negative `scale`,
+    // so every sheet rect/piece on this page is drawn with negative width
+    // and height — not a crash, but a garbled, illegible overview page with
+    // no indication anything went wrong. Clamping to a small positive floor
+    // keeps every cell a real (if tiny and overlapping) rectangle instead.
+    const cellW = Math.max(3, (pageW - margin * 2) / cols - 5);
+    const cellH = Math.max(3, (pageH - margin * 2 - 20) / rows - 8);
     doc.addPage();
     layout.sheets.forEach((_, i) => {
       const col = i % cols;

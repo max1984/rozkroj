@@ -15,6 +15,7 @@ function piece(edgeBanding: PieceDefinition['edgeBanding']): PieceDefinition {
 // (filename, table rows, sheet layout math) without needing a real canvas.
 let savedFilename = '';
 let textCalls: string[] = [];
+let rectCalls: { w: number; h: number }[] = [];
 vi.mock('jspdf', () => ({
   default: class {
     lastAutoTable = { finalY: 0 };
@@ -24,7 +25,7 @@ vi.mock('jspdf', () => ({
     setDrawColor() {}
     setLineWidth() {}
     text(s: string) { textCalls.push(s); }
-    rect() {}
+    rect(_x: number, _y: number, w: number, h: number) { rectCalls.push({ w, h }); }
     line() {}
     addPage() {}
     save(filename: string) { savedFilename = filename; }
@@ -122,6 +123,41 @@ describe('generatePdf — inch unit formatting', () => {
       const kerfLine = textCalls.find(s => s.startsWith('Kerf:'));
       expect(kerfLine).toContain('3 1/2"');
       expect(kerfLine).not.toContain('3.50"');
+    }
+  );
+});
+
+describe('generatePdf — "all on one page" overview with many sheets', () => {
+  afterEach(() => {
+    rectCalls = [];
+  });
+
+  it(
+    'regression: with enough sheets, the grid cell size (page size minus a fixed inter-cell ' +
+      'gutter, divided by cols/rows) went zero or negative — drawSheet() then computed a ' +
+      'negative scale, so every sheet on the overview page was drawn with a negative-sized ' +
+      'rect instead of a tiny-but-visible one',
+    async () => {
+      const sheets: LayoutResult['sheets'] = Array.from({ length: 500 }, (_, i) => ({
+        sheetIndex: i,
+        materialId: 'm1',
+        width: 2440,
+        height: 1220,
+        placedPieces: [],
+        freeRects: [],
+        usableArea: 2440 * 1220,
+        wastedArea: 0,
+        wastePercent: 0,
+      }));
+      const layout: LayoutResult = { ...emptyLayout(), sheets };
+
+      await generatePdf(layout, project(), true, 'New Project');
+
+      expect(rectCalls.length).toBeGreaterThan(0);
+      for (const { w, h } of rectCalls) {
+        expect(w).toBeGreaterThan(0);
+        expect(h).toBeGreaterThan(0);
+      }
     }
   );
 });
