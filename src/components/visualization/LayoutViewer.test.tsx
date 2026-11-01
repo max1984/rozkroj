@@ -6,14 +6,15 @@ import type { LayoutResult, MaterialStock, PieceDefinition, SheetLayout } from '
 
 let layout: LayoutResult | null = null;
 let pieces: PieceDefinition[] = [];
+let projectId = 'p1';
 const materials: MaterialStock[] = [
   { id: 'm1', name: 'Chipboard', color: '#4e79a7', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
   { id: 'm2', name: 'MDF', color: '#f28e2b', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
 ];
 
 vi.mock('../../store', () => ({
-  useStore: (selector: (s: { layout: LayoutResult | null; materials: MaterialStock[]; pieces: PieceDefinition[] }) => unknown) =>
-    selector({ layout, materials, pieces }),
+  useStore: (selector: (s: { layout: LayoutResult | null; materials: MaterialStock[]; pieces: PieceDefinition[]; projectId: string }) => unknown) =>
+    selector({ layout, materials, pieces, projectId }),
 }));
 
 // SheetCanvas renders a real Konva <Stage>, which needs a canvas backend
@@ -37,6 +38,7 @@ afterEach(() => {
   cleanup();
   layout = null;
   pieces = [];
+  projectId = 'p1';
 });
 
 describe('LayoutViewer', () => {
@@ -87,6 +89,22 @@ describe('LayoutViewer', () => {
 
     const [prevBtn] = screen.getAllByRole('button');
     fireEvent.click(prevBtn);
+    expect(screen.getByText('Sheet 1 / 2')).toBeTruthy();
+  });
+
+  it('resets to the first sheet when switching to a different project, even if that project has fewer sheets', () => {
+    layout = { sheets: [sheet(), sheet({ sheetIndex: 1 }), sheet({ sheetIndex: 2 })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
+    const { rerender } = render(<LayoutViewer />);
+    const [, nextBtn] = screen.getAllByRole('button');
+    fireEvent.click(nextBtn);
+    fireEvent.click(nextBtn);
+    expect(screen.getByText('Sheet 3 / 3')).toBeTruthy();
+
+    // A different project with fewer sheets loads — the clamp alone would
+    // land on its LAST sheet (same numeric index), not its first.
+    projectId = 'p2';
+    layout = { sheets: [sheet(), sheet({ sheetIndex: 1 })], unplacedPieces: [], totalWastePercent: 10, materialUsage: [], totalCost: 0, computedAt: 0 };
+    rerender(<LayoutViewer />);
     expect(screen.getByText('Sheet 1 / 2')).toBeTruthy();
   });
 

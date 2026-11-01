@@ -9,7 +9,27 @@ export function LayoutViewer() {
   const layout = useStore(s => s.layout);
   const materials = useStore(s => s.materials);
   const pieces = useStore(s => s.pieces);
+  const projectId = useStore(s => s.projectId);
   const [sheetIdx, setSheetIdx] = useState(0);
+
+  // sheetIdx is local view state, not reset by the store on its own. The
+  // clamp below (against the CURRENT layout.sheets.length) already handles
+  // an edit shrinking/growing the sheet count WITHIN the same project —
+  // intentionally preserving whatever sheet the user was looking at. But
+  // switching to a genuinely different project (New/Load/Duplicate/Delete-
+  // active, all of which change projectId) should start that different
+  // project's view at its first sheet, not silently land wherever the
+  // clamp happens to put the OLD numeric index in the NEW layout — e.g.
+  // leaving a 5-sheet project on sheet 4 and loading a 2-sheet project
+  // would otherwise clamp straight to its LAST sheet instead of its first.
+  // Adjusted during render (React's documented pattern for resetting state
+  // on a prop/store change) rather than in an effect, which would cause an
+  // extra, avoidable re-render.
+  const [prevProjectId, setPrevProjectId] = useState(projectId);
+  if (projectId !== prevProjectId) {
+    setPrevProjectId(projectId);
+    setSheetIdx(0);
+  }
 
   if (!layout || layout.sheets.length === 0) {
     return (
