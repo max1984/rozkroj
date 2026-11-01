@@ -1,7 +1,7 @@
-import type { } from 'react';
+import { memo } from 'react';
 import { Stage, Layer, Rect, Text, Line, Group } from 'react-konva';
 import { useStore } from '../../store';
-import type { SheetLayout } from '../../types';
+import type { PieceDefinition, PlacedPiece, SheetLayout } from '../../types';
 import { mapEdgeBandingForRotation } from '../../utils/edgeBanding';
 import { gridIntervalMm } from '../../utils/canvasGrid';
 
@@ -69,46 +69,19 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
           {sheet.placedPieces.map((pp) => {
             const def = pieceMap.get(pp.definitionId);
             if (!def) return null;
-            const isSelected = selectedPieceId === pp.definitionId;
-            const isHovered = hoveredPieceId === pp.definitionId;
-            const highlight = isSelected || isHovered;
-
-            const x = pp.x * scale;
-            const y = pp.y * scale;
-            const w = pp.width * scale;
-            const h = pp.height * scale;
-
             return (
-              <Group
+              <PlacedPieceShape
                 key={`${pp.definitionId}-${pp.instanceIndex}`}
-                onClick={() => setSelectedPieceId(isSelected ? null : pp.definitionId)}
-                onMouseEnter={() => setHoveredPieceId(pp.definitionId)}
-                onMouseLeave={() => setHoveredPieceId(null)}
-              >
-                <Rect
-                  x={x}
-                  y={y}
-                  width={w}
-                  height={h}
-                  fill={def.color + (highlight ? 'ff' : 'cc')}
-                  stroke={highlight ? c.highlight : def.color}
-                  strokeWidth={highlight ? 2 : 1}
-                  cornerRadius={2}
-                />
-                {w > 30 && h > 16 && (
-                  <Text
-                    x={x + 3}
-                    y={y + h / 2 - 6}
-                    width={w - 6}
-                    text={def.name}
-                    fontSize={Math.min(11, w / 5, h / 2)}
-                    fontFamily="IBM Plex Mono, monospace"
-                    fill="white"
-                    ellipsis
-                  />
-                )}
-                <EdgeBandingOverlay banding={mapEdgeBandingForRotation(def.edgeBanding, pp.rotated)} x={x} y={y} w={w} h={h} color={c.banding} />
-              </Group>
+                pp={pp}
+                def={def}
+                scale={scale}
+                isSelected={selectedPieceId === pp.definitionId}
+                isHovered={hoveredPieceId === pp.definitionId}
+                highlightColor={c.highlight}
+                bandingColor={c.banding}
+                onSelect={setSelectedPieceId}
+                onHover={setHoveredPieceId}
+              />
             );
           })}
 
@@ -119,6 +92,73 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
     </div>
   );
 }
+
+// A sheet packed with a few small piece types at the already-legal
+// MAX_PIECE_QUANTITY (1000 each) can easily place several thousand pieces on
+// a single sheet (e.g. three 30×30mm piece types at qty 1000 already place
+// 2628 on one 2440×1220mm sheet; a few more, smaller, piece types reach tens
+// of thousands). Before this component existed, every one of those pieces
+// was rendered inline inside SheetCanvas's own map() — so hovering or
+// selecting ANY single piece re-ran that whole map and recreated every
+// other piece's Group/Rect/Text/overlay too, even though their own props
+// never changed. Extracting each piece into its own memo'd component means
+// a hover/select change that doesn't affect a given piece's own highlight
+// state skips it entirely (see SheetCanvas's stable onSelect/onHover
+// props — both are the store's setters directly, not re-created per render).
+interface PlacedPieceShapeProps {
+  pp: PlacedPiece;
+  def: PieceDefinition;
+  scale: number;
+  isSelected: boolean;
+  isHovered: boolean;
+  highlightColor: string;
+  bandingColor: string;
+  onSelect: (id: string | null) => void;
+  onHover: (id: string | null) => void;
+}
+
+const PlacedPieceShape = memo(function PlacedPieceShape({
+  pp, def, scale, isSelected, isHovered, highlightColor, bandingColor, onSelect, onHover,
+}: PlacedPieceShapeProps) {
+  const highlight = isSelected || isHovered;
+  const x = pp.x * scale;
+  const y = pp.y * scale;
+  const w = pp.width * scale;
+  const h = pp.height * scale;
+
+  return (
+    <Group
+      name={`piece-${pp.definitionId}-${pp.instanceIndex}`}
+      onClick={() => onSelect(isSelected ? null : pp.definitionId)}
+      onMouseEnter={() => onHover(pp.definitionId)}
+      onMouseLeave={() => onHover(null)}
+    >
+      <Rect
+        x={x}
+        y={y}
+        width={w}
+        height={h}
+        fill={def.color + (highlight ? 'ff' : 'cc')}
+        stroke={highlight ? highlightColor : def.color}
+        strokeWidth={highlight ? 2 : 1}
+        cornerRadius={2}
+      />
+      {w > 30 && h > 16 && (
+        <Text
+          x={x + 3}
+          y={y + h / 2 - 6}
+          width={w - 6}
+          text={def.name}
+          fontSize={Math.min(11, w / 5, h / 2)}
+          fontFamily="IBM Plex Mono, monospace"
+          fill="white"
+          ellipsis
+        />
+      )}
+      <EdgeBandingOverlay banding={mapEdgeBandingForRotation(def.edgeBanding, pp.rotated)} x={x} y={y} w={w} h={h} color={bandingColor} />
+    </Group>
+  );
+});
 
 function EdgeBandingOverlay({ banding, x, y, w, h, color }: { banding: { top: boolean; right: boolean; bottom: boolean; left: boolean }; x: number; y: number; w: number; h: number; color: string }) {
   return (
