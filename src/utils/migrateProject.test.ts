@@ -164,6 +164,28 @@ describe('migrateProject', () => {
     }
   );
 
+  it(
+    'falls back a material\'s non-finite, negative or missing pricePerSheet to 0, matching the ' +
+      'price input (which already guards isNaN on blur) — otherwise optimizer.ts\'s ' +
+      '`sheetCount * m.pricePerSheet` goes NaN and poisons the whole project\'s totalCost, not just this material',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [
+          currentMaterial({ id: 'string-price', pricePerSheet: 'abc' as unknown as number }),
+          currentMaterial({ id: 'negative-price', pricePerSheet: -10 }),
+          currentMaterial({ id: 'missing-price', pricePerSheet: undefined as unknown as number }),
+          currentMaterial({ id: 'valid-price', pricePerSheet: 42.5 }),
+        ],
+        pieces: [],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.materials.map(m => m.pricePerSheet)).toEqual([0, 0, 0, 42.5]);
+    }
+  );
+
   it('leaves a custom material size untouched even if dimensions match a standard size', () => {
     const standard = STANDARD_SHEET_SIZES[0];
     const customSize = { label: 'My custom', width: standard.width, height: standard.height, custom: true };

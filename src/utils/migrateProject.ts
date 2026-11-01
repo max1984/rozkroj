@@ -110,11 +110,24 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     const matchedSize = STANDARD_SHEET_SIZES.find(
       s => s.width === m.size?.width && s.height === m.size?.height && !m.size?.custom
     );
-    if (matchedSize) return { ...m, size: matchedSize };
     const hasValidSize =
       Number.isFinite(m.size?.width) && (m.size?.width ?? 0) > 0 &&
       Number.isFinite(m.size?.height) && (m.size?.height ?? 0) > 0;
-    return hasValidSize ? m : { ...m, size: DEFAULT_SHEET_SIZE };
+    const size = matchedSize ?? (hasValidSize ? m.size : DEFAULT_SHEET_SIZE);
+    // Same JSON.parse-skips-the-guards class as size.width/height above, but for
+    // pricePerSheet: MaterialManager.tsx's price input already guards against a
+    // non-numeric value on blur (`isNaN(parsed) ? 0 : parsed`), and addMaterial
+    // always seeds a real `0` — but a project file loaded via "Import project
+    // file" (hand-edited, corrupted, or from a pre-pricePerSheet legacy save
+    // where the field never existed) skips that guard entirely. Unlike a bad
+    // sheet size (which only poisons the pieces assigned to THAT material),
+    // `undefined`/NaN/negative here poisons optimizer.ts's
+    // `cost: sheetCount * m.pricePerSheet` for this material, and that NaN then
+    // propagates through `totalCost = materialUsage.reduce((s, u) => s + u.cost, 0)`
+    // — silently blanking the cost summary for the WHOLE project, not just the
+    // material with the bad value.
+    const pricePerSheet = Number.isFinite(m.pricePerSheet) && m.pricePerSheet >= 0 ? m.pricePerSheet : 0;
+    return { ...m, size, pricePerSheet };
   });
 
   // A piece referencing a material that no longer exists (corrupted or hand-edited
