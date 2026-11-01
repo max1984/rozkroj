@@ -152,4 +152,6 @@ export const en: Translations = {
     `${count} row${count !== 1 ? 's' : ''} had a Quantity above ${MAX_PIECE_QUANTITY} and ${count !== 1 ? 'were' : 'was'} clamped to that limit.`,
   csvParseError: 'Failed to parse CSV. Check column names.',
   pdfGenerationFailed: 'Failed to generate the PDF. If the app was just updated, try reloading the page.',
+  pdfTooManySheetsWarning: (count, max) =>
+    `This layout needs ${count} sheets, above the ${max}-sheet PDF export limit. Reduce quantities or split the project to export.`,
 };

@@ -18,6 +18,21 @@ export const MAX_PIECE_QUANTITY = 1000;
 // for piece quantity. 20m is far beyond any real sheet good (the largest
 // standard entry here is ~3m) but still keeps the grid to ~100 lines.
 export const MAX_SHEET_DIMENSION_MM = 20000;
+// MAX_PIECE_QUANTITY above caps a SINGLE piece type's instance count, and
+// MAX_SHEET_DIMENSION_MM caps a single sheet's own size — but neither caps
+// how many sheets a whole project ends up needing, which is what actually
+// drives pdf.ts's generatePdf() cost: its default (one page per sheet) export
+// path calls doc.addPage()+drawSheet() once per `layout.sheets.length`, in a
+// single synchronous loop with no yielding. Measured directly against the
+// real jsPDF (not the mocked one pdf.test.ts uses): 1 000 sheets ≈ 66ms, but
+// 20 000 ≈ 6.5s of a fully blocked tab — and 20 000 sheets is trivially
+// reachable through totally ordinary UI use, with no CSV/import involved at
+// all: just a few dozen piece types, each already at the legal
+// MAX_PIECE_QUANTITY, that don't happen to pack efficiently together. Export
+// refuses (with a warning instead of a multi-second freeze) above this many
+// sheets; genuine jobs needing more than a couple thousand sheets of one
+// material are not realistic.
+export const MAX_PDF_SHEETS = 2000;
 export const MIN_OFFCUT_AREA = 10000;     // mm² (~100×100mm) to be considered reusable
 export const OFFCUT_STOCK_KEY = 'rozkroj_offcuts';
 export const DARK_MODE_KEY = 'rozkroj_dark_mode';

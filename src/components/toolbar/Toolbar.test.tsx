@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { create, type StoreApi, type UseBoundStore } from 'zustand';
 import { Toolbar } from './Toolbar';
 import type { LayoutResult, MaterialStock, PieceDefinition, Project } from '../../types';
+import { MAX_PDF_SHEETS } from '../../constants/defaults';
 
 interface Temporal {
   undo: () => void;
@@ -291,6 +292,30 @@ describe('Toolbar', () => {
     fireEvent.click(screen.getByText('Download PDF'));
 
     await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled());
+    alertSpy.mockRestore();
+  });
+
+  it('warns and refuses to generate a PDF when the layout needs more sheets than MAX_PDF_SHEETS, instead of freezing the tab', async () => {
+    // Reachable through ordinary UI use (see MAX_PDF_SHEETS's own comment) —
+    // generatePdf()'s default export path calls doc.addPage() once per
+    // sheet in a single synchronous loop, so this needs to be caught before
+    // ever calling it (not just before the dynamic import resolves).
+    H.mutable.layout = {
+      sheets: Array.from({ length: MAX_PDF_SHEETS + 1 }, (_, i) => ({
+        sheetIndex: i, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0,
+      })),
+      unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0,
+    };
+    H.exportProject.mockImplementation(exportedProject);
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    render(<Toolbar />);
+    fireEvent.click(screen.getByText('PDF'));
+
+    fireEvent.click(screen.getByText('Download PDF'));
+
+    expect(alertSpy).toHaveBeenCalledTimes(1);
+    expect(alertSpy.mock.calls[0][0]).toContain(String(MAX_PDF_SHEETS + 1));
+    expect(generatePdf).not.toHaveBeenCalled();
     alertSpy.mockRestore();
   });
 

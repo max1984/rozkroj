@@ -190,4 +190,6 @@ export const pl: Translations = {
     )} ilość większą niż ${MAX_PIECE_QUANTITY} i ${polishForm(count, 'został przycięty', 'zostały przycięte', 'zostało przyciętych')} do tego limitu.`,
   csvParseError: 'Nie udało się wczytać pliku CSV. Sprawdź nazwy kolumn.',
   pdfGenerationFailed: 'Nie udało się wygenerować pliku PDF. Jeśli aplikacja została właśnie zaktualizowana, spróbuj odświeżyć stronę.',
+  pdfTooManySheetsWarning: (count, max) =>
+    `Ten układ wymaga ${polishForm(count, `${count} arkusza`, `${count} arkuszy`, `${count} arkuszy`)}, co przekracza limit eksportu PDF (${max} arkuszy). Zmniejsz liczby formatek albo podziel projekt, aby wyeksportować.`,
 };

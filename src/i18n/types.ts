@@ -149,4 +149,5 @@ export interface Translations {
   csvExcessiveQuantityWarning: (count: number) => string;
   csvParseError: string;
   pdfGenerationFailed: string;
+  pdfTooManySheetsWarning: (count: number, max: number) => string;
 }

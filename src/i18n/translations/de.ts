@@ -152,4 +152,6 @@ export const de: Translations = {
     `${count} Zeile${count !== 1 ? 'n' : ''} hatte${count !== 1 ? 'n' : ''} eine Menge über ${MAX_PIECE_QUANTITY} und wurde${count !== 1 ? 'n' : ''} auf dieses Limit begrenzt.`,
   csvParseError: 'CSV-Datei konnte nicht gelesen werden. Überprüfen Sie die Spaltennamen.',
   pdfGenerationFailed: 'PDF-Erstellung fehlgeschlagen. Falls die App gerade aktualisiert wurde, laden Sie die Seite neu.',
+  pdfTooManySheetsWarning: (count, max) =>
+    `Dieses Layout benötigt ${count} Blätter, mehr als das PDF-Export-Limit von ${max} Blättern. Verringern Sie die Mengen oder teilen Sie das Projekt für den Export.`,
 };

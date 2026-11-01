@@ -6,6 +6,7 @@ import { exportCsv } from '../../utils/csv';
 import { useSaveLoad } from '../../hooks/useLocalStorage';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ProjectLibrary } from './ProjectLibrary';
+import { MAX_PDF_SHEETS } from '../../constants/defaults';
 
 function CutMark() {
   return (
@@ -79,6 +80,18 @@ export function Toolbar() {
 
   const handlePdf = async () => {
     if (!layout) return;
+    // generatePdf()'s default (one page per sheet) export path calls
+    // doc.addPage() once per sheet in a single synchronous loop — reachable
+    // through ordinary UI use (a few dozen piece types, each already at the
+    // legal MAX_PIECE_QUANTITY, that don't pack efficiently together), no
+    // CSV/import needed. See MAX_PDF_SHEETS's own comment for the measured
+    // cost. Checked before the dynamic import below so an oversized layout
+    // neither pays for loading the jsPDF chunk nor blocks the tab for
+    // several seconds — just a clear warning instead.
+    if (layout.sheets.length > MAX_PDF_SHEETS) {
+      alert(t.pdfTooManySheetsWarning(layout.sheets.length, MAX_PDF_SHEETS));
+      return;
+    }
     try {
       // jsPDF + autotable are a heavy dependency only needed once someone
       // actually exports a PDF, so they're loaded on demand instead of
