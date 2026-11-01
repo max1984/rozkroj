@@ -245,6 +245,33 @@ describe('MaterialManager', () => {
     expect(screen.getByText('5 pieces using this material')).toBeTruthy();
   });
 
+  it(
+    're-expands the first remaining material when the currently-expanded one disappears from the ' +
+      'list — whether from its own Remove button, or from a wholesale materials swap on a project ' +
+      'switch (New/Load/Duplicate/Delete-active project) — instead of leaving every row collapsed ' +
+      'with no material visibly expanded at all',
+    () => {
+      materials = [material({ id: 'm1', name: 'Chipboard' }), material({ id: 'm2', name: 'MDF' })];
+      const { container, rerender } = render(<MaterialManager />);
+
+      // Switch the expanded row to m2 first, so expandedId genuinely differs
+      // from "whatever materials[0] happens to be" before the swap below.
+      const toggles = () => Array.from(container.querySelectorAll('button[aria-expanded]'));
+      fireEvent.click(toggles()[1]);
+      expect(toggles()[0].getAttribute('aria-expanded')).toBe('false');
+      expect(toggles()[1].getAttribute('aria-expanded')).toBe('true');
+
+      // Simulate m2 (the currently-expanded material) disappearing from the
+      // list — e.g. its own Remove button, or a project switch wiping out
+      // the old materials array entirely.
+      materials = [material({ id: 'm1', name: 'Chipboard' })];
+      rerender(<MaterialManager />);
+
+      const toggleAfter = container.querySelector('button[aria-expanded]')!;
+      expect(toggleAfter.getAttribute('aria-expanded')).toBe('true');
+    }
+  );
+
   it('associates the name, sheet size and price fields with their labels', () => {
     materials = [material()];
     render(<MaterialManager />);

@@ -16,6 +16,25 @@ export function MaterialManager() {
   const removeMaterial = useStore(s => s.removeMaterial);
   const [expandedId, setExpandedId] = useState<string | null>(materials[0]?.id ?? null);
 
+  // expandedId is local view state seeded ONLY at mount, from materials[0] —
+  // so if the currently-expanded material later disappears from the list
+  // (its own Remove button, or `materials` being wholesale replaced by a
+  // project switch: New/Load/Duplicate/Delete-active project, all of which
+  // reset the materials array), expandedId kept pointing at an id no longer
+  // present and nothing re-expanded — every row collapsed, with no way back
+  // to the "first material expanded by default" behavior this component
+  // otherwise guarantees for a fresh mount. Adjusted during render (React's
+  // documented pattern for resetting state on a prop change, same as
+  // PieceForm.tsx's materialId resync and LayoutViewer.tsx's sheetIdx reset)
+  // rather than in an effect, which would cause an extra, avoidable render.
+  const [prevMaterials, setPrevMaterials] = useState(materials);
+  if (prevMaterials !== materials) {
+    setPrevMaterials(materials);
+    if (expandedId !== null && !materials.some(m => m.id === expandedId)) {
+      setExpandedId(materials[0]?.id ?? null);
+    }
+  }
+
   const pieceCount = (materialId: string) =>
     pieces.filter(p => p.materialId === materialId).reduce((s, p) => s + p.quantity, 0);
 
