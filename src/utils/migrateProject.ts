@@ -1,7 +1,7 @@
 import { nanoid } from 'nanoid';
-import type { MaterialStock, PieceDefinition, Project } from '../types';
+import type { CuttingSettings, MaterialStock, PieceDefinition, Project } from '../types';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
-import { MAX_PIECE_QUANTITY } from '../constants/defaults';
+import { DEFAULT_SAW_KERF, DEFAULT_FRESH_EDGE_TRIM, MAX_PIECE_QUANTITY } from '../constants/defaults';
 import { getPieceColor } from './colors';
 import { getInitialLanguage } from './languagePreference';
 import { TRANSLATIONS } from '../i18n';
@@ -55,6 +55,38 @@ function coerceEdgeBanding(value: unknown): PieceDefinition['edgeBanding'] {
     right: coerceBoolean(v.right, false),
     bottom: coerceBoolean(v.bottom, false),
     left: coerceBoolean(v.left, false),
+  };
+}
+
+/**
+ * Same JSON.parse-skips-the-guards class as every field above, but for
+ * CuttingSettings instead of a piece/material field: KerfSettings.tsx's
+ * sawKerf/freshEdgeTrim inputs only ever commit a finite, non-negative
+ * number onBlur (see its own comment), and freshEdge is a button toggle
+ * that only ever flips a real boolean — but a project file loaded via
+ * "Import project file" skips all three of those guards and goes straight
+ * from JSON.parse into the store. Unlike a material-specific field (size,
+ * pricePerSheet), sawKerf/freshEdge/freshEdgeTrim are GLOBAL settings
+ * shared by every material: maxRects.ts adds sawKerf straight onto every
+ * piece's effective width/height (`pieceW + sawKerf`), so a non-finite or
+ * negative value there poisons every placement check for EVERY material at
+ * once, silently sending every single piece to "Unplaced" with nothing
+ * pointing at the real cause. And a stringly-typed `"false"` for freshEdge
+ * is truthy in JS, so optimizer.ts's `settings.freshEdge ? settings.freshEdgeTrim : 0`
+ * would apply a trim the file explicitly said should be off — the exact
+ * same boolean-inversion class coerceBoolean above already guards for
+ * rotationAllowed/priority, just never extended to this field.
+ */
+function coerceSettings(value: unknown): CuttingSettings {
+  const v = (value ?? {}) as Partial<CuttingSettings>;
+  const sawKerf = Number.isFinite(v.sawKerf) && (v.sawKerf as number) >= 0 ? (v.sawKerf as number) : DEFAULT_SAW_KERF;
+  const freshEdgeTrim = Number.isFinite(v.freshEdgeTrim) && (v.freshEdgeTrim as number) >= 0
+    ? (v.freshEdgeTrim as number)
+    : DEFAULT_FRESH_EDGE_TRIM;
+  return {
+    sawKerf,
+    freshEdge: coerceBoolean(v.freshEdge, false),
+    freshEdgeTrim,
   };
 }
 
@@ -196,5 +228,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // material.
   const offcutStock = (project.offcutStock ?? []).filter(o => materialIds.has(o.materialId));
 
-  return { ...project, materials, pieces, offcutStock };
+  const settings = coerceSettings(project.settings);
+
+  return { ...project, materials, pieces, offcutStock, settings };
 }

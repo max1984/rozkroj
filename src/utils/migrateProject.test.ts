@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { migrateProject } from './migrateProject';
-import { DEFAULT_EDGE_BANDING } from '../constants/defaults';
+import { DEFAULT_EDGE_BANDING, DEFAULT_FRESH_EDGE_TRIM, DEFAULT_SAW_KERF } from '../constants/defaults';
 import { DEFAULT_SHEET_SIZE, STANDARD_SHEET_SIZES } from '../constants/sheetSizes';
 import { TRANSLATIONS } from '../i18n';
 
@@ -430,5 +430,58 @@ describe('migrateProject', () => {
     const result = migrateProject(raw);
 
     expect(result.pieces[0].edgeBanding).toEqual({ top: false, right: true, bottom: false, left: false });
+  });
+
+  it('coerces a stringly-typed "false" freshEdge flag to a real boolean instead of leaving it truthy', () => {
+    const raw = {
+      settings: { sawKerf: 3, freshEdge: 'false', freshEdgeTrim: 10 },
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ materialId: 'm1' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.settings.freshEdge).toBe(false);
+  });
+
+  it('falls back non-finite or negative sawKerf/freshEdgeTrim to the application defaults', () => {
+    const raw = {
+      settings: { sawKerf: 'abc', freshEdge: true, freshEdgeTrim: -5 },
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ materialId: 'm1' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.settings.sawKerf).toBe(DEFAULT_SAW_KERF);
+    expect(result.settings.freshEdgeTrim).toBe(DEFAULT_FRESH_EDGE_TRIM);
+    expect(result.settings.freshEdge).toBe(true);
+  });
+
+  it('falls back a missing settings object entirely to the application defaults', () => {
+    const raw = {
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ materialId: 'm1' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.settings).toEqual({
+      sawKerf: DEFAULT_SAW_KERF,
+      freshEdge: false,
+      freshEdgeTrim: DEFAULT_FRESH_EDGE_TRIM,
+    });
+  });
+
+  it('preserves valid settings untouched', () => {
+    const raw = {
+      settings: { sawKerf: 4.5, freshEdge: true, freshEdgeTrim: 20 },
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ materialId: 'm1' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.settings).toEqual({ sawKerf: 4.5, freshEdge: true, freshEdgeTrim: 20 });
   });
 });
