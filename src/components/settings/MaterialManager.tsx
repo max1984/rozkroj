@@ -237,7 +237,20 @@ function MaterialRow({
                 defaultValue + onBlur-commit idiom, keyed on the stored value
                 so an external change (Undo/Redo) still forces a fresh
                 defaultValue. No `unit` in the key — price isn't unit-
-                converted like width/height are. */}
+                converted like width/height are.
+
+                Unlike width/height right above (guarded with `w > 0`/`h > 0`
+                before committing) this only ever rejected a non-numeric
+                value, never a negative one — min="0" is just a spinner hint
+                here, not an enforced constraint, since this field isn't
+                inside a <form> whose submit would run native HTML5
+                validation. Typing e.g. "-50" committed straight through,
+                silently making optimizer.ts's `cost: sheetCount *
+                m.pricePerSheet` (and the project-wide totalCost it sums
+                into) negative for every sheet of this material — exactly
+                the same field migrateProject.ts already guards against a
+                negative value for on import (`pricePerSheet >= 0`), just
+                never extended to this live edit path. */}
             <input
               key={`price-${material.pricePerSheet}`}
               id={`${id}-price`}
@@ -249,7 +262,7 @@ function MaterialRow({
               placeholder="0"
               onBlur={e => {
                 const parsed = parseFloat(e.target.value);
-                const next = isNaN(parsed) ? 0 : parsed;
+                const next = isNaN(parsed) || parsed < 0 ? 0 : parsed;
                 if (next === (material.pricePerSheet || 0)) return;
                 onUpdate({ pricePerSheet: next });
               }}

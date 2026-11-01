@@ -197,6 +197,20 @@ describe('MaterialManager', () => {
     }
   );
 
+  it(
+    'clamps a negative price-per-sheet entry to 0 on blur — unlike the width/height fields ' +
+      'right above it (guarded with `w > 0`/`h > 0`) and migrateProject.ts\'s import guard for this ' +
+      'same field (`pricePerSheet >= 0`), this onBlur only ever checked isNaN, so a typed negative ' +
+      'number committed straight through and made optimizer.ts\'s per-material and total project cost negative',
+    () => {
+      materials = [material({ pricePerSheet: 10 })];
+      render(<MaterialManager />);
+      const priceInput = screen.getByDisplayValue('10');
+      fireEvent.blur(priceInput, { target: { value: '-50' } });
+      expect(updateMaterial).toHaveBeenCalledWith('m1', { pricePerSheet: 0 });
+    }
+  );
+
   it('ignores an unedited price blur (same value re-blurred)', () => {
     materials = [material({ pricePerSheet: 10 })];
     render(<MaterialManager />);
