@@ -17,6 +17,24 @@ export function sanitizeCsvField(value: string): string {
   return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
 }
 
+/**
+ * Inverse of sanitizeCsvField. exportCsv prefixes a Name/Material cell that
+ * starts with =, +, -, @, tab or CR with a protective `'`, so a spreadsheet
+ * app treats it as literal text instead of a formula — but importCsv read
+ * those two cells straight off the parsed row with no matching un-prefix
+ * step. Re-importing the app's own exported CSV (or a CSV merged/re-saved by
+ * a spreadsheet app, which preserves a leading literal quote character as
+ * plain text rather than stripping it) permanently baked that `'` into the
+ * piece's Name forever after, and for Material, broke the exact-name lookup
+ * in `byName` entirely — the material's actual stored name never had the
+ * quote, so a perfectly valid Material cell like "'-18mm MDF" (round-tripped
+ * from a material named "-18mm MDF") silently counted as unmatched and fell
+ * back to the default material instead.
+ */
+export function desanitizeCsvField(value: string): string {
+  return /^'[=+\-@\t\r]/.test(value) ? value.slice(1) : value;
+}
+
 export function edgesToString(p: PieceDefinition): string {
   const edges: string[] = [];
   if (p.edgeBanding.top) edges.push('top');
@@ -99,7 +117,7 @@ export function importCsv(
         let excessiveQuantityCount = 0;
         const pieces: PieceDefinition[] = [];
         (result.data as Record<string, string>[]).forEach((row, i) => {
-          const name = row['Name'] || `Piece ${existingCount + i + 1}`;
+          const name = desanitizeCsvField(row['Name'] || '') || `Piece ${existingCount + i + 1}`;
           const widthRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('width')) ?? '0');
           const heightRaw = parseFloat(Object.values(row).find((_, k) => Object.keys(row)[k].toLowerCase().includes('height')) ?? '0');
           // A non-numeric or zero/negative cell would otherwise silently become a
@@ -110,7 +128,7 @@ export function importCsv(
             invalidDimensionCount++;
             return;
           }
-          const materialCell = row['Material'] || '';
+          const materialCell = desanitizeCsvField(row['Material'] || '');
           const matchedId = byName.get(materialCell.toLowerCase());
           // A non-empty Material cell that matches nothing (typo, or a name
           // from a different project) would otherwise silently land on

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Papa from 'papaparse';
-import { detectUnitFromHeaders, edgesFromString, edgesToString, exportCsv, importCsv, sanitizeCsvField } from './csv';
+import { desanitizeCsvField, detectUnitFromHeaders, edgesFromString, edgesToString, exportCsv, importCsv, sanitizeCsvField } from './csv';
 import { MAX_PIECE_QUANTITY } from '../constants/defaults';
 import type { MaterialStock, PieceDefinition } from '../types';
 
@@ -97,6 +97,29 @@ describe('sanitizeCsvField', () => {
 
   it('leaves an empty string untouched', () => {
     expect(sanitizeCsvField('')).toBe('');
+  });
+});
+
+describe('desanitizeCsvField', () => {
+  it('strips the protective quote sanitizeCsvField adds in front of =, +, -, @', () => {
+    expect(desanitizeCsvField("'=cmd")).toBe('=cmd');
+    expect(desanitizeCsvField("'+1234567890")).toBe('+1234567890');
+    expect(desanitizeCsvField("'-18mm MDF")).toBe('-18mm MDF');
+    expect(desanitizeCsvField("'@SUM(A1)")).toBe('@SUM(A1)');
+  });
+
+  it('leaves an ordinary name untouched', () => {
+    expect(desanitizeCsvField('Left Side Panel')).toBe('Left Side Panel');
+  });
+
+  it('does not strip a leading quote that is not immediately followed by one of the trigger characters', () => {
+    expect(desanitizeCsvField("'Tis the season")).toBe("'Tis the season");
+  });
+
+  it('round-trips with sanitizeCsvField for any value that gets prefixed', () => {
+    for (const raw of ['=1+1', '+49', '-18mm MDF', '@home']) {
+      expect(desanitizeCsvField(sanitizeCsvField(raw))).toBe(raw);
+    }
   });
 });
 
@@ -240,6 +263,44 @@ describe('importCsv', () => {
     expect(pieces[0].quantity).toBe(MAX_PIECE_QUANTITY);
     expect(excessiveQuantityCount).toBe(0);
   });
+
+  it(
+    'regression: re-importing a Name that exportCsv sanitized (e.g. "-45 angled cut", prefixed with a ' +
+      'protective \' to stop spreadsheet apps from executing it as a formula) used to bake that leading ' +
+      'quote permanently into the piece name instead of restoring the original text',
+    async () => {
+      const csv = `Name,Width (mm),Height (mm),Quantity\n${sanitizeCsvField('-45 angled cut')},600,400,1\n`;
+      const file = new File([csv], 'test.csv', { type: 'text/csv' });
+      const onDone = vi.fn();
+
+      importCsv(file, 'mm', 0, materials, onDone, vi.fn(), 'parse error');
+
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+      expect(onDone.mock.calls[0][0][0].name).toBe('-45 angled cut');
+    }
+  );
+
+  it(
+    'regression: a Material cell round-tripped through exportCsv\'s sanitization (material named ' +
+      '"-18mm MDF") used to fail the exact-name match in byName entirely, since the stored material name ' +
+      'never had the protective quote — silently counted as unmatched and reassigned to the default material',
+    async () => {
+      const mdfMaterials: MaterialStock[] = [
+        { id: 'm1', name: '-18mm MDF', color: '#000', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
+        { id: 'm2', name: 'Plywood', color: '#111', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
+      ];
+      const csv = `Name,Material,Width (mm),Height (mm),Quantity\nShelf,${sanitizeCsvField('-18mm MDF')},600,400,1\n`;
+      const file = new File([csv], 'test.csv', { type: 'text/csv' });
+      const onDone = vi.fn();
+
+      importCsv(file, 'mm', 0, mdfMaterials, onDone, vi.fn(), 'parse error');
+
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalled());
+      const [pieces, unmatchedMaterialCount] = onDone.mock.calls[0];
+      expect(unmatchedMaterialCount).toBe(0);
+      expect(pieces[0].materialId).toBe('m1');
+    }
+  );
 
   describe('error paths', () => {
     afterEach(() => {
