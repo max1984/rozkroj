@@ -39,6 +39,12 @@ function state() {
     hasUnsavedChanges: H.mutable.hasUnsavedChanges,
     pieces: H.mutable.pieces, unit: 'mm' as const, materials: H.mutable.materials,
     layout: H.mutable.layout, exportProject: H.exportProject,
+    // Toolbar's undo/redo buttons now go through the main store's own
+    // undo()/redo() wrappers (store/index.ts), not zundo's temporal.undo()/
+    // redo() directly — see their definition there for why. The mocked main
+    // store exposes the same H.undo/H.redo spies the temporal mock below
+    // already does, so existing assertions on them still apply unchanged.
+    undo: H.undo, redo: H.redo,
   };
 }
 

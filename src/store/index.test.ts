@@ -70,6 +70,54 @@ describe('store: undo history noise', () => {
   });
 });
 
+describe('store: undo()/redo() recompute the layout', () => {
+  it(
+    'regression: undo() reverts pieces AND refreshes layout to match — zundo\'s raw temporal.undo() ' +
+      'restores the tracked fields via a set() that bypasses every store action, including the ' +
+      'recomputeLayout() each of those normally makes on every edit, so `layout` kept showing the ' +
+      'just-undone edit until some unrelated change happened to trigger a fresh recompute',
+    async () => {
+      const useStore = await freshStore();
+      const materialId = useStore.getState().materials[0].id;
+      const piece = {
+        name: 'Shelf', materialId, width: 100, height: 100, quantity: 1,
+        grain: 'none' as const, rotationAllowed: true, priority: false,
+        edgeBanding: { top: false, right: false, bottom: false, left: false },
+      };
+
+      useStore.getState().addPiece(piece);
+      useStore.getState().addPiece(piece);
+      expect(useStore.getState().pieces).toHaveLength(2);
+      expect(useStore.getState().layout?.sheets[0].placedPieces).toHaveLength(2);
+
+      useStore.getState().undo();
+
+      expect(useStore.getState().pieces).toHaveLength(1);
+      expect(useStore.getState().layout?.sheets[0].placedPieces).toHaveLength(1);
+    },
+  );
+
+  it('regression: redo() re-applies a piece AND refreshes layout to match, same gap as undo()', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    const piece = {
+      name: 'Shelf', materialId, width: 100, height: 100, quantity: 1,
+      grain: 'none' as const, rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    };
+
+    useStore.getState().addPiece(piece);
+    useStore.getState().addPiece(piece);
+    useStore.getState().undo();
+    expect(useStore.getState().layout?.sheets[0].placedPieces).toHaveLength(1);
+
+    useStore.getState().redo();
+
+    expect(useStore.getState().pieces).toHaveLength(2);
+    expect(useStore.getState().layout?.sheets[0].placedPieces).toHaveLength(2);
+  });
+});
+
 describe('store: pieces', () => {
   it('addPiece assigns an id and color, and recomputes the layout', async () => {
     const useStore = await freshStore();

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { useStore as useZustand } from 'zustand';
 import { useStore } from './store';
 import { isEditableElement } from './utils/dom';
 import { Toolbar } from './components/toolbar/Toolbar';
@@ -10,7 +9,11 @@ import { SummaryPanel } from './components/visualization/SummaryPanel';
 export default function App() {
   const darkMode = useStore(s => s.darkMode);
   const language = useStore(s => s.language);
-  const { undo, redo } = useZustand(useStore.temporal);
+  // Goes through the store's own undo()/redo() wrappers, not zundo's
+  // temporal.undo()/redo() directly — see their definition in store/index.ts
+  // for why (they also recompute `layout`, which zundo's raw undo/redo skip).
+  const undo = useStore(s => s.undo);
+  const redo = useStore(s => s.redo);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);

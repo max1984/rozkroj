@@ -69,6 +69,19 @@ interface AppState {
   setPieces: (pieces: PieceDefinition[]) => void;
 
   recomputeLayout: () => void;
+
+  // Thin wrappers around zundo's own temporal.undo()/redo() (used by the
+  // Toolbar buttons and App.tsx's Cmd/Ctrl+Z shortcut) instead of calling
+  // those directly: zundo's undo/redo restore the tracked fields (pieces,
+  // materials, settings, algorithm, offcutStock, unit) via a raw set() that
+  // bypasses every store action — including the recomputeLayout() call each
+  // of those actions makes on every genuine edit. Without this, `layout`
+  // (and therefore the sheet canvas, summary stats and any PDF exported
+  // right after) kept showing the result of whatever edit was just undone
+  // until some unrelated change happened to trigger a fresh recompute.
+  undo: () => void;
+  redo: () => void;
+
   setSelectedPieceId: (id: string | null) => void;
   setHoveredPieceId: (id: string | null) => void;
   toggleDarkMode: () => void;
@@ -305,6 +318,15 @@ export const useStore = create<AppState>()(
         const { pieces, materials, offcutStock, settings, algorithm } = get();
         const layout = runOptimizer(pieces, materials, offcutStock, settings, algorithm);
         set({ layout });
+      },
+
+      undo: () => {
+        useStore.temporal.getState().undo();
+        get().recomputeLayout();
+      },
+      redo: () => {
+        useStore.temporal.getState().redo();
+        get().recomputeLayout();
       },
 
       setSelectedPieceId: (id) => set({ selectedPieceId: id }),

@@ -19,8 +19,13 @@ const H = vi.hoisted(() => ({
 }));
 
 vi.mock('./store', () => {
-  const useStore = (selector: (s: { darkMode: boolean; language: string }) => unknown) =>
-    selector({ darkMode: H.mutable.darkMode, language: H.mutable.language });
+  // undo/redo now come from the main store's own undo()/redo() wrappers
+  // (store/index.ts), not zundo's temporal.undo()/redo() directly — see
+  // their definition there for why. Exposed here as the same H.undo/H.redo
+  // spies the temporal mock below already uses, so existing assertions on
+  // them still apply unchanged.
+  const useStore = (selector: (s: { darkMode: boolean; language: string; undo: () => void; redo: () => void }) => unknown) =>
+    selector({ darkMode: H.mutable.darkMode, language: H.mutable.language, undo: H.undo, redo: H.redo });
   useStore.getState = () => ({ hasUnsavedChanges: H.mutable.hasUnsavedChanges });
   Object.defineProperty(useStore, 'temporal', { get: () => H.temporalStoreRef.current });
   return { useStore };

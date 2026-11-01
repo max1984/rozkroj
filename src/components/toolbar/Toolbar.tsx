@@ -68,7 +68,14 @@ export function Toolbar() {
     };
   }, [showPdfOpts]);
 
-  const { undo, redo, pastStates, futureStates } = useZustand(useStore.temporal);
+  // pastStates/futureStates come straight from zundo's own temporal store
+  // (only used to disable the buttons), but the actual undo/redo calls go
+  // through the main store's own undo()/redo() wrappers below, not zundo's
+  // directly — see their definition in store/index.ts for why (recomputing
+  // `layout`, which zundo's raw undo/redo never touches).
+  const { pastStates, futureStates } = useZustand(useStore.temporal);
+  const undo = useStore(s => s.undo);
+  const redo = useStore(s => s.redo);
 
   const handlePdf = async () => {
     if (!layout) return;
