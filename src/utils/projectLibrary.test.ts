@@ -70,6 +70,49 @@ describe('saveProjectToLibrary / loadProjectFromLibrary', () => {
     expect(saveProjectToLibrary(project())).toBe(false);
     vi.unstubAllGlobals();
   });
+
+  it('does not leave an orphaned, unindexed project blob behind when the project write succeeds but the index write fails (e.g. quota exceeded)', () => {
+    const real = new MemoryStorage();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => real.getItem(key),
+      key: (index: number) => real.key(index),
+      get length() { return real.length; },
+      removeItem: (key: string) => real.removeItem(key),
+      setItem: (key: string, value: string) => {
+        if (key === 'rozkroj_library_index') throw new Error('QuotaExceededError');
+        real.setItem(key, value);
+      },
+    });
+
+    expect(saveProjectToLibrary(project())).toBe(false);
+
+    // The project's own data must not survive this failed save, invisible to
+    // the index and with no way for the user to ever clean it up.
+    expect(loadProjectFromLibrary('proj-1')).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('restores the previous project content instead of leaving it overwritten when an update fails partway (index write hits quota after the project write already succeeded)', () => {
+    const real = new MemoryStorage();
+    vi.stubGlobal('localStorage', real);
+    saveProjectToLibrary(project({ name: 'Original' }));
+    vi.unstubAllGlobals();
+
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => real.getItem(key),
+      key: (index: number) => real.key(index),
+      get length() { return real.length; },
+      removeItem: (key: string) => real.removeItem(key),
+      setItem: (key: string, value: string) => {
+        if (key === 'rozkroj_library_index') throw new Error('QuotaExceededError');
+        real.setItem(key, value);
+      },
+    });
+
+    expect(saveProjectToLibrary(project({ name: 'Edited' }))).toBe(false);
+    expect(loadProjectFromLibrary('proj-1')?.name).toBe('Original');
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('listProjects', () => {
