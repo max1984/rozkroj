@@ -9,6 +9,22 @@ import { TRANSLATIONS } from '../i18n';
 const VALID_GRAINS = new Set<PieceDefinition['grain']>(['none', 'horizontal', 'vertical']);
 
 /**
+ * Same JSON.parse-skips-the-guards class as every field above, but for a
+ * piece's color: it's always a real `#rrggbb` string by the time a piece
+ * reaches the store through either entry point that creates one — addPiece
+ * (store/index.ts) and the CSV importer (csv.ts) both always assign it via
+ * getPieceColor(index), never from user input — but a project file loaded
+ * via "Import project file" skips that and goes straight from JSON.parse
+ * into the store with no such guard. A hand-edited/corrupted/foreign-tool
+ * file with a missing or malformed color doesn't just mis-render: pdf.ts's
+ * `hex.slice(1, 3)` throws a TypeError on a missing/non-string value (not a
+ * silently wrong NaN swatch), crashing the entire PDF export — the one
+ * place in the app where this field's value is actually parsed, not merely
+ * read back into a CSS style a browser would just ignore if invalid.
+ */
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+
+/**
  * Both the manual add-piece form (checkbox inputs) and the CSV importer
  * (`row['RotationAllowed']?.toLowerCase() !== 'false'` / `row['Priority']?.toLowerCase() === 'true'`)
  * guarantee rotationAllowed/priority are always real booleans by the time a
@@ -187,9 +203,10 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // on the sheet canvas.
   const pieces = (project.pieces ?? [])
     .filter(p => Number.isFinite(p.width) && p.width > 0 && Number.isFinite(p.height) && p.height > 0)
-    .map(p => ({
+    .map((p, i) => ({
       ...p,
       materialId: materialIds.has(p.materialId) ? p.materialId : materials[0].id,
+      color: HEX_COLOR_RE.test(p.color) ? p.color : getPieceColor(i),
       edgeBanding: coerceEdgeBanding(p.edgeBanding),
       // Same class of gap as quantity/width/height above: csv.ts's importer
       // already rejects a Grain cell outside the 'none'|'horizontal'|

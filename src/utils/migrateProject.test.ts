@@ -376,6 +376,40 @@ describe('migrateProject', () => {
   });
 
   it(
+    'falls back an imported piece\'s missing or malformed color to a palette color, instead of ' +
+      'letting pdf.ts\'s hex.slice() throw (or parseInt produce NaN) when it later tries to parse it',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [
+          legacyPiece({ id: 'p1', color: undefined as unknown as string }),
+          legacyPiece({ id: 'p2', color: 'red' }),
+          legacyPiece({ id: 'p3', color: '#zzzzzz' }),
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      for (const piece of result.pieces) {
+        expect(piece.color).toMatch(/^#[0-9a-f]{6}$/i);
+      }
+    }
+  );
+
+  it('leaves a piece\'s valid color untouched', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ color: '#abcdef' })],
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.pieces[0].color).toBe('#abcdef');
+  });
+
+  it(
     'coerces a stringly-typed rotationAllowed/priority from an imported project file to a real boolean, ' +
       'matching the manual form (checkbox) and CSV importer — otherwise optimizer.ts\'s truthy checks ' +
       'treat the literal string "false" as true, the opposite of what the file says',
