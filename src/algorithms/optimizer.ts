@@ -32,10 +32,23 @@ function expandPieces(pieces: PieceDefinition[]): PieceInstance[] {
   });
 }
 
-function initFreeRects(size: SheetSize, trim: number): FreeRect[] {
+// Every placement reserves `piece + kerf` so neighbouring pieces stay a saw blade apart, but a
+// piece that ends exactly at the far edge of the usable area needs no cut there. Extending the
+// initial free rect by one kerf past that edge lets such a piece fit (e.g. a 2800 mm shelf on a
+// 2800 mm sheet) without ever letting a piece itself cross the edge, since its own kerf slack is
+// the only thing that can land in the extension. clipFreeRects trims it back off for display.
+function initFreeRects(size: SheetSize, trim: number, kerf: number): FreeRect[] {
   const usableW = size.width - trim * 2;
   const usableH = size.height - trim * 2;
-  return [{ x: trim, y: trim, width: usableW, height: usableH }];
+  return [{ x: trim, y: trim, width: usableW + kerf, height: usableH + kerf }];
+}
+
+function clipFreeRects(freeRects: FreeRect[], size: SheetSize, trim: number): FreeRect[] {
+  const maxX = size.width - trim;
+  const maxY = size.height - trim;
+  return freeRects
+    .map(r => ({ ...r, width: Math.min(r.width, maxX - r.x), height: Math.min(r.height, maxY - r.y) }))
+    .filter(r => r.width > 0 && r.height > 0);
 }
 
 function usableArea(size: SheetSize, trim: number): number {
@@ -109,10 +122,14 @@ interface Bin {
 
 /** Whether an (empty) offcut is big enough to hold this piece at all, in either orientation if rotation is allowed. */
 function offcutFits(o: OffcutItem, inst: PieceInstance, kerf: number): boolean {
+  // The free area of an offcut extends one kerf past its edge (see initFreeRects), so the
+  // piece alone has to fit — no cut is needed along the offcut's own far edges.
+  const ow = o.width + kerf;
+  const oh = o.height + kerf;
   const w = inst.width + kerf;
   const h = inst.height + kerf;
-  if (o.width >= w && o.height >= h) return true;
-  return inst.rotationAllowed && o.width >= h && o.height >= w;
+  if (ow >= w && oh >= h) return true;
+  return inst.rotationAllowed && ow >= h && oh >= w;
 }
 
 /**
@@ -154,7 +171,7 @@ function packMaterial(
   const nextBin = makeBinSupplier(material, offcuts, settings);
 
   let bin = nextBin(instances[0]);
-  let freeRects: FreeRect[] = initFreeRects(bin.size, bin.trim);
+  let freeRects: FreeRect[] = initFreeRects(bin.size, bin.trim, settings.sawKerf);
   let placed: PlacedPiece[] = [];
   let sheetIndex = startSheetIndex;
 
@@ -164,7 +181,7 @@ function packMaterial(
       const ua = usableArea(bin.size, bin.trim);
       const placedArea = placed.reduce((sum, p) => sum + p.width * p.height, 0);
       const wasted = ua - placedArea;
-      const freeOffcuts = freeRects.filter(r => r.width * r.height >= MIN_OFFCUT_AREA);
+      const freeOffcuts = clipFreeRects(freeRects, bin.size, bin.trim).filter(r => r.width * r.height >= MIN_OFFCUT_AREA);
       sheets.push({
         sheetIndex,
         materialId: material.id,
@@ -186,7 +203,7 @@ function packMaterial(
   const advanceBin = (inst: PieceInstance) => {
     finalizeBin();
     bin = nextBin(inst);
-    freeRects = initFreeRects(bin.size, bin.trim);
+    freeRects = initFreeRects(bin.size, bin.trim, settings.sawKerf);
     placed = [];
   };
 

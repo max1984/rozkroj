@@ -210,4 +210,64 @@ describe('runOptimizer', () => {
     // (1000 - 2*50) * (1000 - 2*50) = 900 * 900 = 810,000
     expect(result.sheets[0].usableArea).toBe(810000);
   });
+
+  describe('saw kerf at the sheet edge', () => {
+    const KERF: CuttingSettings = { sawKerf: 4, freshEdge: false, freshEdgeTrim: 0 };
+
+    it.each(['maxrects', 'easycut'] as const)('places a piece exactly as large as the sheet (%s)', algorithm => {
+      const mat = material({ size: size(2800, 2070) });
+      const result = runOptimizer([piece({ materialId: mat.id, width: 2800, height: 2070 })], [mat], [], KERF, algorithm);
+
+      expect(result.unplacedPieces).toEqual([]);
+      expect(result.sheets).toHaveLength(1);
+      expect(result.sheets[0].placedPieces[0]).toMatchObject({ x: 0, y: 0, width: 2800, height: 2070 });
+      expect(result.sheets[0].freeRects).toEqual([]);
+    });
+
+    it('fits two pieces separated by one kerf across the full sheet width', () => {
+      const mat = material({ size: size(1004, 500) });
+      const result = runOptimizer([piece({ materialId: mat.id, width: 500, height: 500, quantity: 2, rotationAllowed: false })], [mat], [], KERF, 'maxrects');
+
+      expect(result.unplacedPieces).toEqual([]);
+      expect(result.sheets).toHaveLength(1);
+      const xs = result.sheets[0].placedPieces.map(p => p.x).sort((a, b) => a - b);
+      expect(xs).toEqual([0, 504]);
+    });
+
+    it('still keeps a kerf between pieces, spilling to a second sheet when it does not fit', () => {
+      const mat = material({ size: size(1003, 500) });
+      const result = runOptimizer([piece({ materialId: mat.id, width: 500, height: 500, quantity: 2, rotationAllowed: false })], [mat], [], KERF, 'maxrects');
+
+      expect(result.sheets).toHaveLength(2);
+    });
+
+    it('fits a piece exactly as large as the usable area inside the fresh-edge trim', () => {
+      const mat = material({ size: size(1000, 1000) });
+      const settings: CuttingSettings = { sawKerf: 4, freshEdge: true, freshEdgeTrim: 10 };
+      const result = runOptimizer([piece({ materialId: mat.id, width: 980, height: 980 })], [mat], [], settings, 'maxrects');
+
+      expect(result.unplacedPieces).toEqual([]);
+      expect(result.sheets[0].placedPieces[0]).toMatchObject({ x: 10, y: 10 });
+    });
+
+    it('uses an offcut that exactly matches the piece instead of a fresh sheet', () => {
+      const mat = material({ size: size(2800, 2070) });
+      const offcut: OffcutItem = { id: 'o1', materialId: mat.id, label: 'Scrap', width: 600, height: 400 };
+      const result = runOptimizer([piece({ materialId: mat.id, width: 600, height: 400 })], [mat], [offcut], KERF, 'maxrects');
+
+      expect(result.sheets).toHaveLength(1);
+      expect(result.sheets[0].sourceOffcutId).toBe('o1');
+      expect(result.materialUsage).toEqual([]);
+    });
+
+    it('never reports a free rect reaching past the sheet edge', () => {
+      const mat = material({ size: size(1000, 1000) });
+      const result = runOptimizer([piece({ materialId: mat.id, width: 400, height: 300 })], [mat], [], KERF, 'maxrects');
+
+      for (const r of result.sheets[0].freeRects) {
+        expect(r.x + r.width).toBeLessThanOrEqual(1000);
+        expect(r.y + r.height).toBeLessThanOrEqual(1000);
+      }
+    });
+  });
 });
