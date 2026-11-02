@@ -259,6 +259,28 @@ describe('migrateProject', () => {
     expect(result.offcutStock).toEqual([validOffcut]);
   });
 
+  it(
+    'drops an offcutStock entry with a non-finite, negative, or zero width/height instead of ' +
+      'letting it reach OffcutStock.tsx\'s display as "NaN mm × NaN mm" — same bug class as ' +
+      "MaterialStock.size, just never checked for OffcutItem before",
+    () => {
+      const validOffcut = { id: 'o1', materialId: 'm1', width: 100, height: 100, label: 'Scrap' };
+      const nanWidth = { id: 'o2', materialId: 'm1', width: NaN, height: 100, label: 'Scrap' };
+      const negativeHeight = { id: 'o3', materialId: 'm1', width: 100, height: -50, label: 'Scrap' };
+      const zeroWidth = { id: 'o4', materialId: 'm1', width: 0, height: 100, label: 'Scrap' };
+      const raw = {
+        settings: {},
+        materials: [currentMaterial({ id: 'm1' })],
+        pieces: [],
+        offcutStock: [validOffcut, nanWidth, negativeHeight, zeroWidth],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.offcutStock).toEqual([validOffcut]);
+    }
+  );
+
   it('leaves a piece\'s materialId untouched when it matches an existing material', () => {
     const raw = {
       settings: {},

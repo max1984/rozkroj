@@ -234,7 +234,31 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // === material.id) never matches) that the OffcutStock panel still shows
   // as available (it isn't filtered there), and misrepresenting its
   // material.
-  const offcutStock = (project.offcutStock ?? []).filter(o => materialIds.has(o.materialId));
+  //
+  // Same width/height gap as PieceDefinition above (a prior cycle checked
+  // this and judged it the weaker half of its own candidate — offcutFits()'s
+  // `o.width >= w` comparisons just always evaluate false for a NaN/negative
+  // value, so a corrupted offcut is never actually matched to a piece,
+  // unlike the pervasive optimizer corruption a bad material size caused —
+  // but that assessment only looked at the optimizer, not OffcutStock.tsx's
+  // own display: `{format(oc.width)} × {format(oc.height)}` calls
+  // formatDisplay(), which for mm units is literally `` `${mm} mm` `` with no
+  // guard at all — the exact same "NaN mm × NaN mm" visible defect already
+  // fixed for MaterialManager's header via MaterialStock.size, just one
+  // component over. A hand-edited/corrupted project file with an offcut's
+  // width or height NaN/negative/zero skipped every guard the two entry
+  // points that create an offcut already have (OffcutStock.tsx's
+  // addOffcuts() only ever copies a `FreeRect` the optimizer itself computed,
+  // always a real positive size) and landed directly on screen. Dropped
+  // outright rather than defaulted, same reasoning as a piece's own
+  // width/height: there's no sensible fallback size for a specific piece of
+  // scrap, so a 1×1mm (or default-sized) stand-in would just misrepresent
+  // what's actually on the shelf.
+  const offcutStock = (project.offcutStock ?? []).filter(
+    o => materialIds.has(o.materialId) &&
+      Number.isFinite(o.width) && o.width > 0 &&
+      Number.isFinite(o.height) && o.height > 0
+  );
 
   const settings = coerceSettings(project.settings);
 
