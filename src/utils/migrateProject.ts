@@ -106,6 +106,35 @@ function coerceSettings(value: unknown): CuttingSettings {
   };
 }
 
+/**
+ * addPiece/addMaterial/addOffcut(s)/duplicatePiece (store/index.ts) and
+ * loadFromFile's project-level id (useLocalStorage.ts, fixed for the whole
+ * Project.id in 4846cc4) all guarantee a fresh nanoid() for anything new —
+ * but nothing enforced that a piece/material/offcut's `id` is even unique
+ * WITHIN its own array in the first place. A hand-edited or corrupted
+ * project file (or one produced by a buggy export elsewhere) can carry two
+ * pieces, two materials, or two offcuts with the identical `id`. Every
+ * store action that targets one row by id — updatePiece/removePiece,
+ * updateMaterial/removeMaterial, removeOffcut — does a plain
+ * `x.id === id` match with no uniqueness assumption, so once two rows
+ * share an id, editing or deleting the one the user clicked silently acts
+ * on BOTH (same `key={m.id}`/`key={oc.id}` React uses to tell the rows
+ * apart in MaterialManager.tsx/OffcutStock.tsx/PieceList.tsx). The first
+ * occurrence of a repeated id keeps it; every later duplicate (or any
+ * falsy id) gets a fresh nanoid() instead, exactly like duplicateProject()
+ * already does one level up for Project.id.
+ */
+function dedupeIds<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  return items.map(item => {
+    if (!item.id || seen.has(item.id)) {
+      return { ...item, id: nanoid() };
+    }
+    seen.add(item.id);
+    return item;
+  });
+}
+
 interface LegacyProject {
   settings?: { size?: { label: string; width: number; height: number; custom?: boolean } };
   materials?: MaterialStock[];
@@ -154,7 +183,11 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // would literally render "NaN mm × NaN mm". Falls back to DEFAULT_SHEET_SIZE rather than
   // dropping the material — unlike an invalid piece dimension, a material can't be silently
   // dropped without also orphaning every piece/offcut that references it.
-  const materials = project.materials.map(m => {
+  // Deduped before materialIds (right below) is built from these ids, so a
+  // piece/offcut referencing the now-regenerated duplicate's id falls back
+  // to the surviving (first) occurrence, same as a genuinely dangling
+  // reference already does — see dedupeIds' own comment.
+  const materials = dedupeIds(project.materials.map(m => {
     const matchedSize = STANDARD_SHEET_SIZES.find(
       s => s.width === m.size?.width && s.height === m.size?.height && !m.size?.custom
     );
@@ -184,7 +217,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
     // material with the bad value.
     const pricePerSheet = Number.isFinite(m.pricePerSheet) && m.pricePerSheet >= 0 ? m.pricePerSheet : 0;
     return { ...m, size, pricePerSheet };
-  });
+  }));
 
   // A piece referencing a material that no longer exists (corrupted or hand-edited
   // save, or materials trimmed independently) would otherwise be silently dropped
@@ -201,7 +234,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // instead of kept around with a 1×1mm sliver the optimizer would place
   // somewhere, or a negative size rendered incorrectly in the cut list and
   // on the sheet canvas.
-  const pieces = (project.pieces ?? [])
+  const pieces = dedupeIds((project.pieces ?? [])
     .filter(p => Number.isFinite(p.width) && p.width > 0 && Number.isFinite(p.height) && p.height > 0)
     .map((p, i) => ({
       ...p,
@@ -239,7 +272,7 @@ export function migrateProject(raw: LegacyProject & Project): Project {
       // entirely, not just malformed.
       rotationAllowed: coerceBoolean(p.rotationAllowed, true),
       priority: coerceBoolean(p.priority, false),
-    }));
+    })));
 
   // Same dangling-reference risk as pieces above, but an offcut can't be
   // reassigned the same way: a piece is still something the user wants cut
@@ -271,11 +304,11 @@ export function migrateProject(raw: LegacyProject & Project): Project {
   // width/height: there's no sensible fallback size for a specific piece of
   // scrap, so a 1×1mm (or default-sized) stand-in would just misrepresent
   // what's actually on the shelf.
-  const offcutStock = (project.offcutStock ?? []).filter(
+  const offcutStock = dedupeIds((project.offcutStock ?? []).filter(
     o => materialIds.has(o.materialId) &&
       Number.isFinite(o.width) && o.width > 0 &&
       Number.isFinite(o.height) && o.height > 0
-  );
+  ));
 
   const settings = coerceSettings(project.settings);
 

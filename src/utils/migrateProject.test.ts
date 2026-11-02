@@ -595,4 +595,79 @@ describe('migrateProject', () => {
     expect(result.unit).toBe('inch');
     expect(result.algorithm).toBe('easycut');
   });
+
+  it(
+    'gives a later piece a fresh id when two imported pieces share one, instead of letting ' +
+      'updatePiece/removePiece (which match by `x.id === id`) silently act on both at once',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [
+          legacyPiece({ id: 'dup', name: 'Shelf A', materialId: 'm1' }),
+          legacyPiece({ id: 'dup', name: 'Shelf B', materialId: 'm1' }),
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.pieces).toHaveLength(2);
+      const [first, second] = result.pieces;
+      expect(first.id).toBe('dup');
+      expect(second.id).not.toBe('dup');
+      expect(second.id).not.toBe('');
+      // Regenerating the id must not disturb which piece is which.
+      expect(first.name).toBe('Shelf A');
+      expect(second.name).toBe('Shelf B');
+    }
+  );
+
+  it(
+    'gives a later material a fresh id when two imported materials share one, instead of ' +
+      'letting updateMaterial/removeMaterial silently act on both at once',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [
+          currentMaterial({ id: 'dup', name: 'Plywood' }),
+          currentMaterial({ id: 'dup', name: 'MDF' }),
+        ],
+        pieces: [],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.materials).toHaveLength(2);
+      const [first, second] = result.materials;
+      expect(first.id).toBe('dup');
+      expect(second.id).not.toBe('dup');
+      expect(first.name).toBe('Plywood');
+      expect(second.name).toBe('MDF');
+    }
+  );
+
+  it(
+    'gives a later offcut a fresh id when two imported offcuts share one, instead of letting ' +
+      'removeOffcut (which filters by `o.id !== id`) silently remove both at once',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [],
+        offcutStock: [
+          { id: 'dup', materialId: 'm1', width: 100, height: 100, label: 'A' },
+          { id: 'dup', materialId: 'm1', width: 200, height: 200, label: 'B' },
+        ],
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.offcutStock).toHaveLength(2);
+      const [first, second] = result.offcutStock;
+      expect(first.id).toBe('dup');
+      expect(second.id).not.toBe('dup');
+      expect(first.label).toBe('A');
+      expect(second.label).toBe('B');
+    }
+  );
 });
