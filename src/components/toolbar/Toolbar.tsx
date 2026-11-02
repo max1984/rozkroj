@@ -109,6 +109,18 @@ export function Toolbar() {
       // that drawSheet looks up by id against project.pieces (fresh).
       const currentLayout = useStore.getState().layout;
       if (!currentLayout) return;
+      // The MAX_PDF_SHEETS check above only ever saw the STALE `layout`
+      // captured in this closure at render time — it never re-runs against
+      // `currentLayout` once it's actually read. A re-optimize that grows
+      // the sheet count past the limit while the dynamic import above is
+      // still pending (same race the comment on `currentLayout` already
+      // guards for correctness) would otherwise sail straight past this
+      // guard and into generatePdf()'s unthrottled doc.addPage() loop —
+      // exactly the tab freeze MAX_PDF_SHEETS exists to prevent.
+      if (currentLayout.sheets.length > MAX_PDF_SHEETS) {
+        alert(t.pdfTooManySheetsWarning(currentLayout.sheets.length, MAX_PDF_SHEETS));
+        return;
+      }
       const project = useStore.getState().exportProject();
       await generatePdf(currentLayout, project, pdfAllOnOne, t.newProjectDefaultName);
       setShowPdfOpts(false);

@@ -319,6 +319,41 @@ describe('Toolbar', () => {
     alertSpy.mockRestore();
   });
 
+  it(
+    'regression: re-checks MAX_PDF_SHEETS against the fresh layout read after the dynamic import, ' +
+      'not just the stale one captured when Export was clicked — a re-optimize that grows the sheet ' +
+      'count past the limit while jsPDF is still loading must not reach generatePdf()',
+    async () => {
+      const smallLayout: LayoutResult = {
+        sheets: [{ sheetIndex: 0, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0 }],
+        unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 0,
+      };
+      const hugeLayout: LayoutResult = {
+        sheets: Array.from({ length: MAX_PDF_SHEETS + 1 }, (_, i) => ({
+          sheetIndex: i, materialId: 'm1', width: 100, height: 100, placedPieces: [], freeRects: [], usableArea: 10000, wastedArea: 0, wastePercent: 0,
+        })),
+        unplacedPieces: [], totalWastePercent: 0, materialUsage: [], totalCost: 0, computedAt: 1,
+      };
+      H.mutable.layout = smallLayout;
+      H.exportProject.mockImplementation(exportedProject);
+      const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+      render(<Toolbar />);
+      fireEvent.click(screen.getByText('PDF'));
+      fireEvent.click(screen.getByText('Download PDF'));
+
+      // A re-optimize (e.g. a CSV import or piece edit) pushes the sheet
+      // count past MAX_PDF_SHEETS while the jsPDF dynamic import is still
+      // pending — same race `reads a fresh layout...` above exercises for
+      // correctness, but this time the fresh layout is the one that's oversized.
+      H.mutable.layout = hugeLayout;
+
+      await vi.waitFor(() => expect(alertSpy).toHaveBeenCalled());
+      expect(alertSpy.mock.calls[0][0]).toContain(String(MAX_PDF_SHEETS + 1));
+      expect(generatePdf).not.toHaveBeenCalled();
+      alertSpy.mockRestore();
+    }
+  );
+
   it('toggles dark mode', () => {
     render(<Toolbar />);
     fireEvent.click(screen.getByTitle('Toggle theme'));
