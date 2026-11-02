@@ -17,14 +17,23 @@ export function PieceRow({ piece }: Props) {
   const duplicatePiece = useStore(s => s.duplicatePiece);
   const setHoveredPieceId = useStore(s => s.setHoveredPieceId);
   const setSelectedPieceId = useStore(s => s.setSelectedPieceId);
-  const selectedPieceId = useStore(s => s.selectedPieceId);
+  // Derived INSIDE the selector (not `s => s.selectedPieceId`, read raw and
+  // compared to piece.id afterwards) — same reasoning as SheetCanvas's
+  // isSelected/isHovered props: zustand decides whether to re-render a
+  // subscriber by comparing the selector's OWN return value across states,
+  // not anything derived from it afterwards. Reading the raw id meant every
+  // row in the list shared the exact same subscribed value, so selecting
+  // ANY row changed that value for ALL of them (e.g. null -> 'p1') and
+  // re-rendered every row in a potentially large (CSV-imported, no upper
+  // bound on distinct piece types) list — not just the one or two rows
+  // whose own highlight actually flipped. Deriving the boolean here means
+  // an unrelated row's selector output (false) truly stays unchanged.
+  const isSelected = useStore(s => s.selectedPieceId === piece.id);
   const materials = useStore(s => s.materials);
   const unplacedCount = useStore(s => s.layout?.unplacedPieces?.filter(u => u.definitionId === piece.id).length ?? 0);
   const { format } = useUnitDisplay();
   const [editing, setEditing] = useState(false);
   const material = materials.find(m => m.id === piece.materialId);
-
-  const isSelected = selectedPieceId === piece.id;
 
   if (editing) {
     return (
