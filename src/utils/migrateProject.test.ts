@@ -560,4 +560,39 @@ describe('migrateProject', () => {
 
     expect(result.settings).toEqual({ sawKerf: 4.5, freshEdge: true, freshEdgeTrim: 20 });
   });
+
+  it(
+    'falls back an imported project\'s malformed/missing unit and algorithm to \'mm\'/\'maxrects\', ' +
+      'matching UnitToggle/AlgorithmPicker\'s own two fixed values instead of letting a garbled string ' +
+      'through to the CSV export header or leaving neither toggle button pressed',
+    () => {
+      const raw = {
+        settings: {},
+        materials: [currentMaterial()],
+        pieces: [legacyPiece({ materialId: 'm1' })],
+        unit: 'cm',
+        algorithm: 'guillotine',
+      } as unknown as Project;
+
+      const result = migrateProject(raw);
+
+      expect(result.unit).toBe('mm');
+      expect(result.algorithm).toBe('maxrects');
+    }
+  );
+
+  it('leaves a project\'s valid unit and algorithm untouched', () => {
+    const raw = {
+      settings: {},
+      materials: [currentMaterial()],
+      pieces: [legacyPiece({ materialId: 'm1' })],
+      unit: 'inch',
+      algorithm: 'easycut',
+    } as unknown as Project;
+
+    const result = migrateProject(raw);
+
+    expect(result.unit).toBe('inch');
+    expect(result.algorithm).toBe('easycut');
+  });
 });

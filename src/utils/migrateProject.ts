@@ -279,5 +279,25 @@ export function migrateProject(raw: LegacyProject & Project): Project {
 
   const settings = coerceSettings(project.settings);
 
-  return { ...project, materials, pieces, offcutStock, settings };
+  // Same JSON.parse-skips-the-guards class as every field above, but for the
+  // two project-level enums: UnitToggle.tsx's setUnit() and
+  // AlgorithmPicker.tsx's setAlgorithm() are the ONLY places either field is
+  // ever written, and both only ever pass one of their two fixed button
+  // values ('mm'/'inch', 'maxrects'/'easycut') — but a project file loaded
+  // via "Import project file" skips both of those and goes straight from
+  // JSON.parse into the store with no such guard. Nothing crashes on an
+  // unrecognized value (optimizer.ts's `algorithm === 'easycut'` and
+  // units.ts's `unit === 'inch'` both just treat any other string the same
+  // as the "else" branch, exactly like grain's `=== 'none'` check above), but
+  // it's not purely cosmetic either: csv.ts's exportCsv() interpolates the
+  // raw value straight into the column header (`` `Width (${unit})` ``), so a
+  // garbled unit would permanently brand every future CSV export of that
+  // project with a nonsense header instead of "mm"/"inch" — on top of the
+  // same "neither button shows pressed" gap `aria-pressed`/`aria-expanded`
+  // already warns about elsewhere once the project reloads into
+  // UnitToggle/AlgorithmPicker.
+  const unit = project.unit === 'inch' ? 'inch' : 'mm';
+  const algorithm = project.algorithm === 'easycut' ? 'easycut' : 'maxrects';
+
+  return { ...project, materials, pieces, offcutStock, settings, unit, algorithm };
 }
