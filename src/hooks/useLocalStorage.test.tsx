@@ -39,8 +39,31 @@ describe('useSaveLoad.loadFromFile', () => {
     result.current.loadFromFile(file);
 
     expect(confirmDiscardUnsaved).toHaveBeenCalledTimes(1);
-    await vi.waitFor(() => expect(loadProject).toHaveBeenCalledWith({ name: 'Imported' }));
+    await vi.waitFor(() => expect(loadProject).toHaveBeenCalledWith(expect.objectContaining({ name: 'Imported' })));
   });
+
+  it(
+    'regression: assigns a fresh id to an imported project instead of keeping the one baked into ' +
+      "the file — saveProjectToLibrary() (projectLibrary.ts) keys purely off project.id, so keeping " +
+      'the imported id meant the very next Save silently overwrote whatever unrelated project already ' +
+      'sat under that id in THIS library (e.g. re-importing an old backup, or reusing a shared template ' +
+      'for a second job) — the same risk duplicateProject() already avoids by generating a new id',
+    async () => {
+      const { result } = renderHook(() => useSaveLoad());
+      const file = new File(
+        [JSON.stringify({ id: 'original-file-id', name: 'Imported' })],
+        'p.rozkroj.json',
+        { type: 'application/json' }
+      );
+
+      result.current.loadFromFile(file);
+
+      await vi.waitFor(() => expect(loadProject).toHaveBeenCalled());
+      const loaded = loadProject.mock.calls[0][0] as { id: string; name: string };
+      expect(loaded.id).not.toBe('original-file-id');
+      expect(loaded.name).toBe('Imported');
+    }
+  );
 
   it('does not read or load the file when confirmDiscardUnsaved() returns false', () => {
     confirmDiscardUnsaved.mockReturnValue(false);

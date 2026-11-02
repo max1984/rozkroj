@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { useStore } from '../store';
 import { migrateProject } from '../utils/migrateProject';
 import { useTranslation } from './useTranslation';
@@ -18,7 +19,20 @@ export function useSaveLoad() {
     reader.onload = (e) => {
       try {
         const project = migrateProject(JSON.parse(e.target?.result as string));
-        loadProject(project);
+        // Unlike loadProjectById()/the startup-resume path — which
+        // intentionally keep a project's original id to continue editing the
+        // SAME library slot — "Import project file" has no such guarantee
+        // about what it's loading: it could be your own earlier backup/
+        // export, or a template/file shared by someone else. Its `id` was
+        // baked in whenever IT was exported, and may already belong to a
+        // completely different entry in THIS library (re-importing an old
+        // backup of a project you still have, or reusing a shared template
+        // for a second job). saveProjectToLibrary() keys purely off
+        // project.id, so keeping it meant the very next "Save" silently
+        // overwrote whatever unrelated project already sat under that id,
+        // with no warning — same reasoning duplicateProject() (store/index.ts)
+        // already applies when copying a project within the library.
+        loadProject({ ...project, id: nanoid() });
       } catch {
         alert(t.invalidProjectFile);
       }
