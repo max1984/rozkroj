@@ -295,6 +295,13 @@ export const useStore = create<AppState>()(
         get().recomputeLayout();
       },
       removePiece: (id) => {
+        // Deliberately doesn't clear selectedPieceId/hoveredPieceId even when
+        // they point at the piece being removed: nanoid() never reuses an id,
+        // so a dangling reference here simply never matches any piece.id again
+        // (PieceRow/SheetCanvas derive isSelected/isHovered via `=== piece.id`)
+        // and stays harmlessly inert — except after Undo, which restores the
+        // removed piece with that same id and makes it look selected/hovered
+        // again, matching what the user had before the removal they're undoing.
         set(state => ({ pieces: state.pieces.filter(x => x.id !== id) }));
         get().recomputeLayout();
       },
