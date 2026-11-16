@@ -28,7 +28,11 @@ vi.mock('react-konva', () => ({
   Stage: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Layer: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   Group: GroupSpy,
-  Rect: () => null,
+  // Only the sheet background Rect takes an onClick (the deselect-on-empty-space
+  // target) — render it as a clickable div so that path is testable too, while the
+  // waste-overlay/piece-fill Rects (no onClick) stay rendered as nothing, as before.
+  Rect: ({ onClick }: { onClick?: () => void }) =>
+    onClick ? <div data-testid="sheet-background" onClick={onClick} /> : null,
   Text: () => null,
   Line: () => null,
 }));
@@ -121,5 +125,15 @@ describe('SheetCanvas', () => {
 
     fireEvent.click(screen.getByTestId('piece-p2-1'));
     expect(useStore.getState().selectedPieceId).toBe('p2');
+  });
+
+  it('clears the selection when clicking empty sheet background', () => {
+    const pieces = [piece('p1', '#4e79a7')];
+    useStore.setState({ pieces, selectedPieceId: 'p1' });
+    const sheet = sheetWith(pieces);
+    render(<SheetCanvas sheet={sheet} sheetWidth={sheet.width} sheetHeight={sheet.height} />);
+
+    fireEvent.click(screen.getByTestId('sheet-background'));
+    expect(useStore.getState().selectedPieceId).toBeNull();
   });
 });

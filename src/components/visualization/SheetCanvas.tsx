@@ -39,8 +39,13 @@ export function SheetCanvas({ sheet, sheetWidth, sheetHeight }: Props) {
     <div className="overflow-auto">
       <Stage width={canvasW} height={canvasH} className="border border-line rounded-lg">
         <Layer>
-          {/* Sheet background */}
-          <Rect x={0} y={0} width={canvasW} height={canvasH} fill={c.sheetBg} />
+          {/* Sheet background — also doubles as the "click empty space to deselect" target,
+              since pieces never cover the whole sheet and there is otherwise no way to clear
+              a selection made by clicking a piece except clicking that same piece again. */}
+          <Rect
+            x={0} y={0} width={canvasW} height={canvasH} fill={c.sheetBg}
+            onClick={() => setSelectedPieceId(null)}
+          />
 
           {/* Blueprint grid */}
           {Array.from({ length: Math.floor(sheetWidth / gridStep) + 1 }, (_, i) => i * gridStep).map(mm => (
