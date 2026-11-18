@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { migrateProject } from './migrateProject';
 import { MAX_PIECE_QUANTITY, MAX_SHEET_DIMENSION_MM } from '../constants/defaults';
+import type { Project, MaterialStock, PieceDefinition, OffcutItem } from '../types';
 
 // Seeded PRNG (mulberry32) — deterministic, reproducible failures.
 function mulberry32(seed: number) {
@@ -152,7 +153,7 @@ function randomProject(rnd: () => number) {
     settings,
     unit: pick(rnd, ['mm', 'inch', 'cubit', undefined]),
     algorithm: pick(rnd, ['maxrects', 'easycut', 'bogus', undefined]),
-  } as any;
+  } as unknown as Project;
 }
 
 describe('migrateProject fuzzing — combinatorial corruption (complements the per-field unit tests)', () => {
@@ -170,15 +171,15 @@ describe('migrateProject fuzzing — combinatorial corruption (complements the p
       // migrateProject() must not mutate its input.
       expect(JSON.stringify(raw)).toBe(rawSnapshot);
 
-      const materialIds = new Set(result.materials.map((m: any) => m.id));
+      const materialIds = new Set(result.materials.map((m: MaterialStock) => m.id));
 
       // Invariant: always at least one material.
       expect(result.materials.length).toBeGreaterThan(0);
 
       // Invariant: no duplicate ids within any of the three arrays.
       expect(materialIds.size).toBe(result.materials.length);
-      expect(new Set(result.pieces.map((p: any) => p.id)).size).toBe(result.pieces.length);
-      expect(new Set(result.offcutStock.map((o: any) => o.id)).size).toBe(result.offcutStock.length);
+      expect(new Set(result.pieces.map((p: PieceDefinition) => p.id)).size).toBe(result.pieces.length);
+      expect(new Set(result.offcutStock.map((o: OffcutItem) => o.id)).size).toBe(result.offcutStock.length);
 
       for (const m of result.materials) {
         expect(Number.isFinite(m.size.width)).toBe(true);
