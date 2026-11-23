@@ -38,6 +38,10 @@ describe('formatDisplay', () => {
   it('formats a whole-plus-fraction inch value', () => {
     expect(formatDisplay(25.4 + 12.7, 'inch')).toBe('1 1/2"');
   });
+
+  it('rounds a fraction that lands on 32/32 up to the next whole inch, not "2 32/32"', () => {
+    expect(formatDisplay(76, 'inch')).toBe('3"');
+  });
 });
 
 describe('formatInputValue', () => {

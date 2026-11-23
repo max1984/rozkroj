@@ -193,6 +193,47 @@ describe('store: pieces', () => {
 
     expect(useStore.getState().pieces).toHaveLength(1);
   });
+
+  it('updatePiece merges a partial patch into the matching piece and recomputes the layout', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    const id = useStore.getState().pieces[0].id;
+
+    const recomputeSpy = vi.spyOn(useStore.getState(), 'recomputeLayout');
+    useStore.getState().updatePiece(id, { width: 500, priority: true });
+
+    const { pieces } = useStore.getState();
+    expect(pieces[0]).toMatchObject({ width: 500, height: 300, priority: true });
+    expect(recomputeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('setPieces replaces the whole pieces array in one go and recomputes the layout', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    const imported = [
+      {
+        id: 'imported-1', name: 'Door', materialId, width: 600, height: 200, quantity: 1,
+        grain: 'none' as const, rotationAllowed: true, priority: false,
+        edgeBanding: { top: false, right: false, bottom: false, left: false }, color: '#000',
+      },
+    ];
+
+    useStore.getState().setPieces(imported);
+
+    const { pieces, layout } = useStore.getState();
+    expect(pieces).toEqual(imported);
+    expect(layout?.sheets[0].placedPieces).toHaveLength(1);
+  });
 });
 
 describe('store: materials', () => {
@@ -204,6 +245,18 @@ describe('store: materials', () => {
     expect(materials).toHaveLength(2);
     expect(materials[1].name).toBe('MDF');
     expect(materials[1].id).not.toBe(materials[0].id);
+  });
+
+  it('updateMaterial merges a partial patch into the matching material and recomputes the layout', async () => {
+    const useStore = await freshStore();
+    const id = useStore.getState().materials[0].id;
+    const recomputeSpy = vi.spyOn(useStore.getState(), 'recomputeLayout');
+
+    useStore.getState().updateMaterial(id, { name: 'Renamed MDF', pricePerSheet: 99 });
+
+    const material = useStore.getState().materials[0];
+    expect(material).toMatchObject({ id, name: 'Renamed MDF', pricePerSheet: 99 });
+    expect(recomputeSpy).toHaveBeenCalledTimes(1);
   });
 
   it('removeMaterial refuses to remove the last remaining material', async () => {
@@ -285,6 +338,23 @@ describe('store: settings', () => {
     useStore.getState().setSettings({ sawKerf: 5 });
     expect(useStore.getState().settings.sawKerf).toBe(5);
     expect(useStore.getState().settings.freshEdge).toBe(true); // untouched field preserved
+  });
+
+  it('setAlgorithm switches the active algorithm and recomputes the layout with it', async () => {
+    const useStore = await freshStore();
+    const materialId = useStore.getState().materials[0].id;
+    useStore.getState().addPiece({
+      name: 'Shelf', materialId, width: 400, height: 300, quantity: 1,
+      grain: 'none', rotationAllowed: true, priority: false,
+      edgeBanding: { top: false, right: false, bottom: false, left: false },
+    });
+    const recomputeSpy = vi.spyOn(useStore.getState(), 'recomputeLayout');
+
+    useStore.getState().setAlgorithm('easycut');
+
+    expect(useStore.getState().algorithm).toBe('easycut');
+    expect(recomputeSpy).toHaveBeenCalledTimes(1);
+    expect(useStore.getState().layout?.sheets[0].placedPieces).toHaveLength(1);
   });
 
   it('setUnit persists the choice so future projects default to it', async () => {

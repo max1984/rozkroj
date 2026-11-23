@@ -137,6 +137,14 @@ describe('listProjects', () => {
     expect(loadProjectFromLibrary('p2')?.name).toBe('Second');
   });
 
+  it('skips a project key that stores an empty string when rebuilding the index, instead of trying to parse it', () => {
+    saveProjectToLibrary(project({ id: 'p1', name: 'First', updatedAt: 100 }));
+    localStorage.setItem('rozkroj_library_project_ghost', '');
+    localStorage.setItem('rozkroj_library_index', '{not valid json');
+
+    expect(listProjects().map(e => e.id)).toEqual(['p1']);
+  });
+
   it('does not let a corrupt index get silently overwritten down to one project on the next save', () => {
     saveProjectToLibrary(project({ id: 'p1', updatedAt: 100 }));
     saveProjectToLibrary(project({ id: 'p2', updatedAt: 200 }));
