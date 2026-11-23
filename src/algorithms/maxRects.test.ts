@@ -77,6 +77,25 @@ describe('placePiece', () => {
     expect(result).toHaveLength(2);
   });
 
+  it('leaves left and right strips free when a piece is placed in the middle of a row', () => {
+    // The mirror-image case of the top/bottom-strip test above, but along x
+    // instead of y — exercises splitFreeRect's left-split branch, which (unlike
+    // its top/bottom/right siblings) was never reached by any existing test:
+    // findBestPlacement always proposes a free rect's OWN (x, y) corner for a
+    // placement, so a left-split (placed.x > fr.x) only happens when a LATER
+    // placement's piece overlaps into a DIFFERENT, still-free rect that starts
+    // further left — exactly what this constructs directly.
+    const freeRects: FreeRect[] = [{ x: 0, y: 0, width: 200, height: 50 }];
+    const result = placePiece(freeRects, 50, 0, 50, 50);
+    expect(result).toEqual(
+      expect.arrayContaining([
+        { x: 0, y: 0, width: 50, height: 50 },
+        { x: 100, y: 0, width: 100, height: 50 },
+      ])
+    );
+    expect(result).toHaveLength(2);
+  });
+
   it('leaves a non-overlapping free rect untouched', () => {
     const freeRects: FreeRect[] = [
       { x: 0, y: 0, width: 100, height: 100 },
