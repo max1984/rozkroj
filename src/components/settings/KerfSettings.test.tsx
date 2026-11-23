@@ -99,6 +99,27 @@ describe('KerfSettings', () => {
     expect(setSettings).toHaveBeenCalledWith({ freshEdgeTrim: 15 });
   });
 
+  it('ignores an empty freshEdgeTrim value instead of setting NaN', () => {
+    const { container } = render(<KerfSettings />);
+    const trimInput = container.querySelectorAll('input[type="number"]')[0];
+    fireEvent.blur(trimInput, { target: { value: '' } });
+    expect(setSettings).not.toHaveBeenCalled();
+  });
+
+  it('ignores a negative freshEdgeTrim value', () => {
+    const { container } = render(<KerfSettings />);
+    const trimInput = container.querySelectorAll('input[type="number"]')[0];
+    fireEvent.blur(trimInput, { target: { value: '-1' } });
+    expect(setSettings).not.toHaveBeenCalled();
+  });
+
+  it('ignores an unedited freshEdgeTrim blur (same value re-blurred)', () => {
+    const { container } = render(<KerfSettings />);
+    const trimInput = container.querySelectorAll('input[type="number"]')[0] as HTMLInputElement;
+    fireEvent.blur(trimInput, { target: { value: trimInput.value } });
+    expect(setSettings).not.toHaveBeenCalled();
+  });
+
   it('associates the numeric fields with their labels, and the toggle with an accessible name', () => {
     render(<KerfSettings />);
     expect(screen.getByLabelText(/Trim per side/)).toBeTruthy();

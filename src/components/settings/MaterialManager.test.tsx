@@ -66,6 +66,28 @@ describe('MaterialManager', () => {
     expect(toggleBtn.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it(
+    'resyncs the expanded row back to the first material if the expanded one disappears from the list ' +
+      '(its own Remove button, or the whole materials array being replaced by a project switch) — ' +
+      'without this, every row would end up collapsed with no way back to the default-expanded behavior',
+    () => {
+      materials = [material({ id: 'm1' }), material({ id: 'm2', name: 'MDF' })];
+      const { container, rerender } = render(<MaterialManager />);
+      const rows = () => Array.from(container.querySelectorAll('button[aria-expanded]'));
+
+      // Expand the second material explicitly (first is expanded by default).
+      fireEvent.click(rows()[1]);
+      expect(rows()[1].getAttribute('aria-expanded')).toBe('true');
+
+      // m2 disappears — materials is a NEW array so the identity check fires.
+      materials = [material({ id: 'm1' })];
+      rerender(<MaterialManager />);
+
+      expect(rows()).toHaveLength(1);
+      expect(rows()[0].getAttribute('aria-expanded')).toBe('true');
+    }
+  );
+
   it('updates a custom width on blur with a valid value', () => {
     materials = [material()];
     render(<MaterialManager />);
@@ -95,6 +117,23 @@ describe('MaterialManager', () => {
     materials = [material()];
     render(<MaterialManager />);
     fireEvent.blur(screen.getByPlaceholderText('Height (mm)'), { target: { value: '' } });
+    expect(updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it('updates a custom height on blur with a valid value', () => {
+    materials = [material()];
+    render(<MaterialManager />);
+    fireEvent.blur(screen.getByPlaceholderText('Height (mm)'), { target: { value: '800' } });
+    expect(updateMaterial).toHaveBeenCalledWith('m1', { size: { label: 'Custom', width: 1000, height: 800, custom: true } });
+  });
+
+  it('does nothing on an unedited height blur', () => {
+    materials = [material()];
+    render(<MaterialManager />);
+    const heightInput = screen.getByPlaceholderText('Height (mm)') as HTMLInputElement;
+
+    fireEvent.blur(heightInput, { target: { value: heightInput.value } });
+
     expect(updateMaterial).not.toHaveBeenCalled();
   });
 
@@ -236,6 +275,27 @@ describe('MaterialManager', () => {
     const standard = STANDARD_SHEET_SIZES[0];
     fireEvent.change(screen.getByDisplayValue('Custom'), { target: { value: `${standard.width}x${standard.height}` } });
     expect(updateMaterial).toHaveBeenCalledWith('m1', { size: standard });
+  });
+
+  it('switches to a custom sheet size, keeping the current dimensions but marking them editable', () => {
+    const standard = STANDARD_SHEET_SIZES[0];
+    materials = [material({ size: { ...standard, custom: undefined } })];
+    render(<MaterialManager />);
+
+    fireEvent.change(screen.getByLabelText('Sheet size'), { target: { value: 'custom' } });
+
+    expect(updateMaterial).toHaveBeenCalledWith('m1', {
+      size: { label: 'Custom', width: standard.width, height: standard.height, custom: true },
+    });
+  });
+
+  it('updates the material name as the user types', () => {
+    materials = [material({ name: 'Chipboard' })];
+    render(<MaterialManager />);
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Baltic birch' } });
+
+    expect(updateMaterial).toHaveBeenCalledWith('m1', { name: 'Baltic birch' });
   });
 
   it('hides the remove button when there is only one material', () => {

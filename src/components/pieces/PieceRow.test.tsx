@@ -88,6 +88,20 @@ describe('PieceRow', () => {
     expect(setSelectedPieceId).toHaveBeenCalledWith(null);
   });
 
+  it(
+    'regression: does not toggle selection on Enter/Space bubbled up from a child button (Edit/Duplicate/' +
+      'Delete) — those buttons have their own native Enter/Space-activates-click behavior, which this ' +
+      'row-level handler must not hijack just because the keydown bubbles up to it',
+    () => {
+      const { container } = render(<PieceRow piece={piece()} />);
+      const deleteBtn = container.querySelectorAll('button')[2];
+
+      fireEvent.keyDown(deleteBtn, { key: 'Enter', bubbles: true });
+
+      expect(setSelectedPieceId).not.toHaveBeenCalled();
+    }
+  );
+
   it('sets and clears the hovered piece id on mouse enter/leave', () => {
     const { container } = render(<PieceRow piece={piece()} />);
     const row = container.firstElementChild!;
@@ -134,6 +148,16 @@ describe('PieceRow', () => {
     expect(setSelectedPieceId).not.toHaveBeenCalled();
     // PieceForm is now rendered in place of the row, with the piece's values pre-filled.
     expect(screen.getByDisplayValue('600')).toBeTruthy();
+  });
+
+  it('returns to the normal row view when the inline edit form is cancelled', () => {
+    const { container } = render(<PieceRow piece={piece()} />);
+    fireEvent.click(container.querySelectorAll('button')[0]);
+    expect(screen.getByDisplayValue('600')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByDisplayValue('600')).toBeNull();
+    expect(screen.getByText('Shelf')).toBeTruthy();
   });
 
   it('shows a grain indicator only when the piece has a grain direction', () => {

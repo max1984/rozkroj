@@ -6,9 +6,9 @@ import type { LayoutResult, MaterialStock, OffcutItem, SheetLayout } from '../..
 
 let offcutStock: OffcutItem[] = [];
 let layout: LayoutResult | null = null;
-const materials: MaterialStock[] = [
-  { id: 'm1', name: 'Chipboard', color: '#4e79a7', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 },
-];
+const material1: MaterialStock = { id: 'm1', name: 'Chipboard', color: '#4e79a7', size: { label: 'Sheet', width: 2440, height: 1220 }, pricePerSheet: 0 };
+const material2: MaterialStock = { id: 'm2', name: 'MDF', color: '#f28e2b', size: { label: 'Sheet', width: 2800, height: 2070 }, pricePerSheet: 0 };
+let materials: MaterialStock[] = [material1];
 const removeOffcut = vi.fn();
 const addOffcuts = vi.fn();
 
@@ -34,6 +34,7 @@ afterEach(() => {
   vi.clearAllMocks();
   offcutStock = [];
   layout = null;
+  materials = [material1];
 });
 
 describe('OffcutStock', () => {
@@ -46,6 +47,16 @@ describe('OffcutStock', () => {
     offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
     render(<OffcutStock />);
     expect(screen.getByText('300mm × 200mm')).toBeTruthy();
+  });
+
+  it('shows which material an offcut belongs to once there is more than one material, but not with only one', () => {
+    offcutStock = [{ id: 'o1', materialId: 'm1', width: 300, height: 200, label: '300×200' }];
+    const { rerender } = render(<OffcutStock />);
+    expect(screen.queryByText('Chipboard', { exact: false })).toBeNull();
+
+    materials = [material1, material2];
+    rerender(<OffcutStock />);
+    expect(screen.getByText('Chipboard', { exact: false })).toBeTruthy();
   });
 
   it('removes an offcut when its delete button is clicked', () => {
