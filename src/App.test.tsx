@@ -77,6 +77,12 @@ describe('App', () => {
     expect(H.undo).toHaveBeenCalledTimes(1);
   });
 
+  it('undoes on Ctrl+Z (no metaKey) — the Windows/Linux path, never exercised by any existing test', () => {
+    render(<App />);
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(H.undo).toHaveBeenCalledTimes(1);
+  });
+
   it('redoes on Cmd/Ctrl+Shift+Z outside of a text field', () => {
     render(<App />);
     // A REAL browser reports the Shift-modified case here — holding Shift
