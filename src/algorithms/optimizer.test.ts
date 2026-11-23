@@ -69,6 +69,31 @@ describe('runOptimizer', () => {
     expect(result.materialUsage).toEqual([]);
   });
 
+  it('marks a piece too large for the sheet as unplaced under the easycut algorithm too', () => {
+    // Mirrors the maxrects test above — tryPlaceEasycut's own "nothing fits" return
+    // was never exercised by any existing easycut test, which only placed pieces
+    // that DO fit.
+    const mat = material({ size: size(500, 500) });
+    const result = runOptimizer([piece({ materialId: mat.id, width: 600, height: 600 })], [mat], [], NO_TRIM_SETTINGS, 'easycut');
+
+    expect(result.sheets).toEqual([]);
+    expect(result.unplacedPieces).toEqual([{ definitionId: 'p1', instanceIndex: 0 }]);
+    expect(result.materialUsage).toEqual([]);
+  });
+
+  it('skips a material whose only piece has quantity 0, without creating a phantom sheet', () => {
+    // A piece DEFINITION with quantity 0 still passes runOptimizer's per-material
+    // "any pieces at all" filter (it's a real row, just temporarily zeroed out in
+    // the UI), so packMaterial is still called for that material — it must notice
+    // expandPieces() produced zero instances and bail out before touching any bin.
+    const mat = material();
+    const result = runOptimizer([piece({ materialId: mat.id, quantity: 0 })], [mat], [], NO_TRIM_SETTINGS, 'maxrects');
+
+    expect(result.sheets).toEqual([]);
+    expect(result.unplacedPieces).toEqual([]);
+    expect(result.materialUsage).toEqual([]);
+  });
+
   it('spills extra pieces onto a second sheet once the first is full', () => {
     const mat = material({ size: size(500, 500) });
     // Three 400x400 pieces: only one fits per 500x500 sheet.
