@@ -114,6 +114,55 @@ describe('PieceList', () => {
     alertSpy.mockRestore();
   });
 
+  it('warns when some rows had an invalid Grain value, but still imports them', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const imported = [piece({ id: 'new-1' })];
+    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 0, 0, 1));
+
+    const { container } = render(<PieceList />);
+    const fileInput = container.querySelector('input[type="file"]')!;
+    const file = new File(['csv'], 'cutlist.csv', { type: 'text/csv' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(setPieces).toHaveBeenCalledWith([...pieces, ...imported]);
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Grain'));
+    alertSpy.mockRestore();
+  });
+
+  it('warns when some rows had an excessive Quantity, but still imports them', () => {
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+    const imported = [piece({ id: 'new-1' })];
+    importCsv.mockImplementation((_file, _unit, _count, _materials, onDone) => onDone(imported, 0, 0, 0, 1));
+
+    const { container } = render(<PieceList />);
+    const fileInput = container.querySelector('input[type="file"]')!;
+    const file = new File(['csv'], 'cutlist.csv', { type: 'text/csv' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    expect(setPieces).toHaveBeenCalledWith([...pieces, ...imported]);
+    expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Quantity'));
+    alertSpy.mockRestore();
+  });
+
+  it('closes the inline add-piece form when it is cancelled', () => {
+    render(<PieceList />);
+    fireEvent.click(screen.getByTitle('Add piece'));
+    expect(screen.getByText('Add Piece')).toBeTruthy();
+
+    fireEvent.click(screen.getByText('Cancel'));
+    expect(screen.queryByText('Add Piece')).toBeNull();
+  });
+
+  it('does nothing if the file picker is cancelled with no file chosen', () => {
+    const { container } = render(<PieceList />);
+    const fileInput = container.querySelector('input[type="file"]')!;
+
+    fireEvent.change(fileInput, { target: { files: [] } });
+
+    expect(importCsv).not.toHaveBeenCalled();
+    expect(setPieces).not.toHaveBeenCalled();
+  });
+
   it('alerts on a CSV parse error instead of updating pieces', () => {
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
     importCsv.mockImplementation((_file, _unit, _count, _materials, _onDone, onError) => onError('bad csv'));

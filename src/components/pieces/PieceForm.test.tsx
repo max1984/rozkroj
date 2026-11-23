@@ -172,6 +172,24 @@ describe('PieceForm', () => {
     }
   );
 
+  it(
+    'reconverts a freshly typed width/height on a unit toggle while adding a NEW piece — there is no ' +
+      '"original mm value" to fall back on here (unlike the editing-an-existing-piece case above), so ' +
+      'this must go through the same parse-and-convert path as any other edited value',
+    () => {
+      const onClose = vi.fn();
+      const { container, rerender } = render(<PieceForm onClose={onClose} />);
+      const [widthInput] = container.querySelectorAll('input[type="number"]') as NodeListOf<HTMLInputElement>;
+
+      fireEvent.change(widthInput, { target: { value: '600' } });
+
+      mockUnit = 'inch';
+      rerender(<PieceForm onClose={onClose} />);
+
+      expect(widthInput.value).toBe(formatInputValue(toMm(600, 'mm'), 'inch'));
+    }
+  );
+
   it('does not submit when quantity is zero', () => {
     const onClose = vi.fn();
     const { container } = render(<PieceForm onClose={onClose} />);
@@ -251,6 +269,52 @@ describe('PieceForm', () => {
       expect(addPiece.mock.calls[0][0]).toMatchObject({ materialId: 'm2' });
     }
   );
+
+  it('includes the typed name, falling back to a size-derived name only when left blank', () => {
+    const onClose = vi.fn();
+    const { container } = render(<PieceForm onClose={onClose} />);
+
+    fireEvent.change(screen.getByLabelText('Name (optional)'), { target: { value: 'Shelf board' } });
+    fillAndSubmit(container, { width: '600', height: '400', qty: '1' });
+
+    expect(addPiece.mock.calls[0][0]).toMatchObject({ name: 'Shelf board' });
+  });
+
+  it('submits the material chosen from the dropdown when more than one material exists', () => {
+    mockMaterials = [material, material2];
+    const onClose = vi.fn();
+    const { container } = render(<PieceForm onClose={onClose} />);
+
+    fireEvent.change(screen.getByLabelText('Material'), { target: { value: 'm2' } });
+    fillAndSubmit(container, { width: '600', height: '400', qty: '1' });
+
+    expect(addPiece.mock.calls[0][0]).toMatchObject({ materialId: 'm2' });
+  });
+
+  it('does not show a material picker at all when only one material exists', () => {
+    render(<PieceForm onClose={vi.fn()} />);
+    expect(screen.queryByLabelText('Material')).toBeNull();
+  });
+
+  it('submits rotationAllowed: false once the user unchecks "Allow rotation"', () => {
+    const onClose = vi.fn();
+    const { container } = render(<PieceForm onClose={onClose} />);
+
+    fireEvent.click(screen.getByLabelText('Allow rotation'));
+    fillAndSubmit(container, { width: '600', height: '400', qty: '1' });
+
+    expect(addPiece.mock.calls[0][0]).toMatchObject({ rotationAllowed: false });
+  });
+
+  it('submits priority: true once the user checks "Priority piece"', () => {
+    const onClose = vi.fn();
+    const { container } = render(<PieceForm onClose={onClose} />);
+
+    fireEvent.click(screen.getByLabelText('Priority piece'));
+    fillAndSubmit(container, { width: '600', height: '400', qty: '1' });
+
+    expect(addPiece.mock.calls[0][0]).toMatchObject({ priority: true });
+  });
 
   it('associates each field with its visible label for screen readers', () => {
     render(<PieceForm onClose={vi.fn()} />);
